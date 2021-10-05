@@ -1,2 +1,2 @@
 # SpOOx
-SPatial Omics Oxford Analysis Pipeline
+Spatial Omics Oxford Analysis Pipeline
