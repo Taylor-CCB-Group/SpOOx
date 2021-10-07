@@ -81,10 +81,8 @@ if not runAsScript:
                         type=str,
                         choices=['.png','.jpg','.tif'],
                         default='.png')
-    parser.add_argument('--doArcsinh',
-                        help='apply arcsinh transform to intensity values before outputting cell data. If true, both transformed and non-transformed values will be returned',
-                        action="store_true",
-                        default=False)
+    parser.add_argument('--doArcsinh', dest='doArcsinh', action='store_true',help='apply arcsinh transform to intensity values before outputting cell data. If true, both transformed and non-transformed values will be returned')
+    parser.set_defaults(doArcsinh=False)
     parser.add_argument('--arcsinhCofactor',
                         help='cofactor in the arcsinh transform (result = arcsinh(input / cofactor) ). Default 5.',
                         type=float,
@@ -101,9 +99,8 @@ if not runAsScript:
                         help='After transforming the mean intensity data, this argument allows any data above the \'distribution_crop_percentile\' to be capped at that percentile, effectively trimming the data above that threshold to that level',
                         type=float,
                         default=0.99)
-    parser.add_argument('--normalise_intensities',
-                        help='Rescale the intensity distributions to the range [0,1]. If applicable, rescaling happens after taking an arcsinh transform or capping intensity values to a fixed percentile',
-                        default=True)
+    parser.add_argument('--normalise_intensities', dest='normalise_intensities', action='store_true',help='Rescale the intensity distributions to the range [0,1]. If applicable, rescaling happens after taking an arcsinh transform or capping intensity values to a fixed percentile')
+    parser.set_defaults(normalise_intensities=False)
     parser.add_argument('--analysisName',
                        type=str,
                        help='overrides the default the name of this analysis which is derived from the directory name')
@@ -131,10 +128,10 @@ if not runAsScript:
     backgroundColourStr = args.backgroundColour
     rgb_string = args.set_rgb
  
-    doArcsinh = args.doArcsinh
+    #doArcsinh = args.doArcsinh
     arcsinhCofactor = args.arcsinhCofactor
     distribution_crop_percentile = args.distribution_crop_percentile
-    normalise_intensities = args.normalise_intensities
+    #normalise_intensities = args.normalise_intensities
     
     
     if backgroundColourStr == 'white':
