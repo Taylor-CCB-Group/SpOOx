@@ -103,7 +103,6 @@ if not runAsScript:
                         default=0.99)
     parser.add_argument('--normalise_intensities',
                         help='Rescale the intensity distributions to the range [0,1]. If applicable, rescaling happens after taking an arcsinh transform or capping intensity values to a fixed percentile',
-                        action="store_true",
                         default=True)
     parser.add_argument('--analysisName',
                        type=str,
