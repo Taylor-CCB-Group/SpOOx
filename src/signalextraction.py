@@ -20,6 +20,7 @@ import pandas as pd
 from cv2 import bitwise_and
 from skimage.segmentation import find_boundaries
 import re
+from pandas_profiling import ProfileReport
 
 # ST library
 import readconfig
@@ -83,7 +84,6 @@ if not runAsScript:
                         default='.png')
     parser.add_argument('--doArcsinh', 
                         dest='doArcsinh', 
-                        default=False, 
                         action='store_true',
                         help='apply arcsinh transform to intensity values before outputting cell data. If true, both transformed and non-transformed values will be returned')
     parser.add_argument('--arcsinhCofactor',
@@ -113,6 +113,9 @@ if not runAsScript:
 
     # Execute the parse_args() method
     args = parser.parse_args()
+    print("\n******************************\n",args,"\n******************************\n")
+
+
     # print(args)
     #st if analysis name not specified autogenerate from the file path of the label matrix path
     #if (args.analysisName):
@@ -139,7 +142,9 @@ if not runAsScript:
     distribution_crop_percentile = args.distribution_crop_percentile
     normalise_intensities = args.normalise_intensities
     
-    
+    # write to README
+
+
     if backgroundColourStr == 'white':
         backgroundColour = [1,1,1]
     elif backgroundColourStr == 'black':
@@ -337,13 +342,16 @@ for i in range(len(properties)):
 
     if doArcsinh:
         arcsinh_pixel_intensities = np.arcsinh(pixel_intensities/arcsinhCofactor)
+        #print("************ Arcsin activated 1")
+
     for j, stain in enumerate(stainList):
         # We only output one value per stain, or everyone complains that the spreadsheet is too big
-        if ~doArcsinh:
-            stats[stain] = pixel_intensities[:,j].mean()
-        else:
+        if doArcsinh:
             stats[stain] = arcsinh_pixel_intensities[:,j].mean()
-        
+            #print("************ Arcsin activated " + stain)
+        else:
+            stats[stain] = pixel_intensities[:,j].mean()
+            #print("************ pixel intensities only activated " + stain)
             
     outputList.append(stats)
     
@@ -371,5 +379,8 @@ if verbose:
 #df.to_csv(pathToSaveAnalysis + analysisName + '_cellData.txt', index=False, sep='\t')
 df.to_csv(pathToSaveAnalysis + statisticsTable, index=False, sep='\t')
 
+# web page output profile
+profile = ProfileReport(df, title=analysisName + " Report", minimal=True, progress_bar=False)
+profile.to_file(pathToSaveAnalysis+"summarystats.html")
 
 
