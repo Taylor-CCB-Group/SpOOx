@@ -11,8 +11,8 @@ import shutil
 import argparse
 import sys
 
-inDir = "/t1-data/project/covidhyperion/staylor/covid2/histocat"
-outDir = "/t1-data/project/covidhyperion/staylor/covid2/tree"
+#inDir = "/t1-data/project/covidhyperion/staylor/covid2/histocat"
+#outDir = "/t1-data/project/covidhyperion/staylor/covid2/tree"
 
 sampleSource = []
 sampleIds = []
@@ -72,9 +72,9 @@ def ParseName(file, outDir):
 parser = argparser = argparse.ArgumentParser(description='''Generate a directory tree for spatial omics analysis
 ''', formatter_class=argparse.RawTextHelpFormatter)
 
-parser.add_argument('--indir', dest='indir',
+parser.add_argument('--indir', dest='inDir',
                     help='input directory of histocat files.')
-parser.add_argument('--outdir', dest='outdir',
+parser.add_argument('--outdir', dest='outDir',
                     help='output directory for analysis files')
 args = parser.parse_args()
 		    
@@ -83,5 +83,5 @@ if len(sys.argv)==1:
     sys.exit(1)	
 
 #print(ParseName("./abc/COVID_SAMPLE_11_ROI_1", outDir))
-HistocatToTree(inDir,outDir)
+HistocatToTree(args.inDir,args.outDir)
           
