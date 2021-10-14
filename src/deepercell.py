@@ -2,7 +2,7 @@
 # coding: utf-8
 
 import cv2
-from os import listdir
+from os import listdir, read
 from os.path import isfile, join
 import os
 import re
@@ -19,9 +19,10 @@ import tifffile
 import numpy as np
 import argparse
 import warnings
+
+# parses SpOOx config files
+import readconfig
 warnings.filterwarnings("ignore")
-
-
 
 def IsValidFile(parser, arg):
     if not os.path.exists(arg):
@@ -55,6 +56,9 @@ def Tiff2Stack(fileName, imageList, dirName):
             #fullPath = dirName + "/" + imgFilename
             # check if the file contains the antibody name
             expression = dirName+"/"+imgFilename+"_"+"*";
+            fullPath = glob.glob(dirName+"/"+imgFilename+"_"+"*.tiff")
+            #print(dirName+"/"+imgFilename+"_"+"*.tiff")
+            #quit()
             try:
                 fullPath = glob.glob(dirName+"/"+imgFilename+"_"+"*.tiff")[0]
                 print("Ab fullpath = ",fullPath)
@@ -78,13 +82,15 @@ Input is both a nuc and cyt file of histocat tiff filenames of the markers names
 Output is label matrix file in tiff format.
 ''', formatter_class=argparse.RawTextHelpFormatter)
 
+parser.add_argument('--markerfile', dest='markerFile',
+                    help='config file containing list of markers with columns for nucleus and cytoplasm')
 parser.add_argument('--cyt', dest='cytolist', metavar='FILE', type=lambda x: IsValidFile(parser, x),
                     help='file containing list of tiff files defining cytoplasm')
 parser.add_argument('--nuc', dest='nuclist', metavar='FILE', type=lambda x: IsValidFile(parser, x),
                     help='file containing list of tiff files defining nucleus')
 parser.add_argument('--outdir', dest='imageOutDir',
                     help='output directory that will contain images from segmentation')
-parser.add_argument('--dir', dest='dirName',
+parser.add_argument('--indir', dest='dirName',
                     help='directory of images (imctools histocat directory)')
 parser.add_argument('--brightness',type=int,
                     help='brightness of the image')
@@ -118,11 +124,11 @@ bwImageOut = os.path.join(args.imageOutDir,"bandwmask.png")
 
 
 # get the file and convert to a list
-cytoList= File2List(args.cytolist)
-nucList= File2List(args.nuclist)
+#cytoList= File2List(args.cytolist)
+#nucList= File2List(args.nuclist)
+cytoList = readconfig.GetMarkerList(args.markerFile, "cytoplasm")
+nucList = readconfig.GetMarkerList(args.markerFile,"nucleus")
 
-# now import the deepcell stuff
-from deepcell.applications import Mesmer
 
 # convert those images to a tiff stack
 print("Assembling nuclear channel containing ", nucList)
@@ -130,6 +136,8 @@ Tiff2Stack(imageNuc,nucList,args.dirName)
 print("Assembling cytoplasmic channel containing ", cytoList)
 Tiff2Stack(imageCyt,cytoList,args.dirName)
 
+# now import the deepcell stuff
+from deepcell.applications import Mesmer
 
 # Z project and flatten nuc to 1 image
 im1 = imread(imageNuc)
