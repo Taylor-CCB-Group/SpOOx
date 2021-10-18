@@ -3,6 +3,9 @@
 import argparse
 import sys
 import os
+import os.path
+import pandas as pd
+from pandas_profiling import ProfileReport
 
 def FindAll(name, path):
     # name of file
@@ -44,6 +47,19 @@ def ConcatenateFiles(dirList, inputFile, outputFile):
                 next(infile)
                 contents = infile.read()
                 outfile.write(contents)
+
+def AppendFiles(dirList, inputFile, outputFile):
+    # take each directory and append the file celldata file in there into a dataframe
+    df = pd.concat((pd.read_csv(os.path.join(dir,inputFile),sep="\t") for dir in dirList))
+    outputDir = os.path.dirname(outputFile)
+    beforeClean = os.path.join(outputDir,"beforecleaning.tab")
+    pandasReport = os.path.join(outputDir,"pandasprofile.html")
+    # gets rid of any columns that don't line up
+    afterClean = df.dropna(axis='columns')
+    afterClean.to_csv(outputFile,sep="\t")
+    df.to_csv(beforeClean,sep="\t")
+    profile = ProfileReport(df, title="Pandas Profiling Report", minimal=True, progress_bar=False)
+    profile.to_file(pandasReport)
 
 
 
@@ -88,8 +104,8 @@ newDir = os.path.join(indir, directory)
 os.makedirs(newDir, exist_ok=True)
 outfile = os.path.join(newDir,outfile)
 
-print("Writing files from:\n","\n".join(allCellDataFiles),"\n*** to ***\n",os.path.join(indir,outfile))
+print("Writing files from:\n","\n",allCellDataFiles,"\n*** to ***\n",os.path.join(indir,outfile))
 
-ConcatenateFiles(allCellDataFiles, infile, os.path.join(indir,outfile))
-
+#ConcatenateFiles(allCellDataFiles, infile, os.path.join(indir,outfile))
+AppendFiles(allCellDataFiles, infile, os.path.join(indir,outfile))
 
