@@ -21,6 +21,9 @@ from cv2 import bitwise_and
 from skimage.segmentation import find_boundaries
 import re
 from pandas_profiling import ProfileReport
+import logging
+
+logging_format = '%(asctime)s\t%(levelname)s\t%(message)s'
 
 # ST library
 import readconfig
@@ -383,4 +386,23 @@ df.to_csv(pathToSaveAnalysis + statisticsTable, index=False, sep='\t')
 profile = ProfileReport(df, title=analysisName + " Report", minimal=True, progress_bar=False)
 profile.to_file(pathToSaveAnalysis+"summarystats.html")
 
+# logile to go in everyoutput directory
+logFile = os.path.join(pathToSaveAnalysis,"README.txt")
 
+if args.verbose:
+    logging.basicConfig(
+            filename = logFile,
+            level = logging.DEBUG,
+            format = logging_format
+    )
+else:
+    logging.basicConfig(
+            filename = logFile,
+            level = logging.INFO,
+            format = logging_format
+    )
+
+print("******************************")
+print(args)
+print("******************************")
+logging.info(args)
