@@ -22,3 +22,5 @@ def GetMarkerList(configFile, selectedColumn):
 
 #a = GetMarkerList("/t1-data/project/covidhyperion/staylor/covid2/config/markers_full.tsv","nucleus")
 #print(a)
+#b = GetMarkerList("/project/covidhyperion/shared/data/panel1/config/markers_panel1.tsv", "nucleus")
+#print(b)
