@@ -16,8 +16,17 @@ from pathlib import Path
 import re
 from pathlib import Path
 
+from pandas_profiling import ProfileReport
+import sys
+
+if not sys.warnoptions:
+    import warnings
+    warnings.simplefilter("ignore")
+
+
 logging_format = '%(asctime)s\t%(levelname)s\t%(message)s'
 mainOutputName = "cellData.tab"
+
 
 class dataset:
 
@@ -52,6 +61,9 @@ def main():
     data_X = pd.DataFrame(ds.df[marker_types].values)
     data_X.columns = marker_types
 
+    #profile = ProfileReport(data_X, title="Pandas Profiling Report", minimal=True, progress_bar=False)
+    #profile.to_file("/home/s/staylor/hyperion/SpOOx/src/output.html")
+
     #Make anndata object of relevant data, where adata.X is the marker data, adata.obs is the image name, and adata.var is the marker labels.
     obs = pd.DataFrame(ds.df["Image Name"].values)
     adata = ad.AnnData(X = data_X, obs=obs)
@@ -61,7 +73,6 @@ def main():
     adata.obs['phenoGraph_cluster'] = pd.Categorical(communities)
     adata.uns['phenoGraph_Q'] = Q
     adata.uns['phenoGraph_k'] = k
-    quit()
 
     #Dimensionality reduction and scatterplot.
     sc.pp.neighbors(adata)
@@ -79,6 +90,7 @@ def main():
     #logging.info('Coordinates and phenograph clusters saved to: %s', ds.pathToWriteOutput+ds.name+"_phenograph_output.tab")
     logging.info('Coordinates and phenograph clusters saved to: %s', ds.pathToWriteOutput+mainOutputName)
 
+
     #Produce heatmap mean marker intensity for each cluster.
     adata2, n_groups = grouped_obs_mean(adata)
     logging.info("There are %s clusters present.", n_groups)
@@ -89,7 +101,7 @@ def main():
 
 
 def process_marker_input(table, marker_input):
-    print(">>>>>>>>>>>>>>>>>",table,">>>>>>>>>>>>",marker_input)
+    #print(">>>>>>>>>>>>>>>>>",table,">>>>>>>>>>>>",marker_input)
     #Takes input table and marker_input path, outputs (a) numpy.ndarray of marker values, (b) list of markers.
     marker_types = []
     marker_input_string = ''.join(marker_input)
@@ -175,29 +187,12 @@ def grouped_obs_mean(adata, layer=None, gene_symbols=None):
     return adata2, n_groups
 
 
-def group_file(n_groups):
-    n = 0
-    cell_list = []
-    while n < n_groups:
-        cell_type = input(f"What is the cell type of cluster {n}:\t")
-        cell_list.append([n, cell_type])
-        n += 1
-    group_out = pd.DataFrame(cell_list, columns=['phenoGraph_cluster', 'cell_name'])
-    group_out.to_csv("/stopgap/hyperion/lho/anortons/phenograph_python/group_file.csv", na_rep = "NaN", index = False)        
-
-
-
-
-
-
-
 parser = argparse.ArgumentParser(
-        prog = "phenograph_prog.py",
+        prog = "phenographclustering.py",
         description = DESC
 )
 parser.add_argument(
         '-i', '--input', 
-        nargs = '+',
         help = 'Input file name (must be a tab-delimited file)',
         required = True
 ) 
@@ -214,12 +209,14 @@ parser.add_argument(
         help = 'Input a file containing column names /or/ column names separated by spaces', 
         required = False,
 )    
+
 parser.add_argument(
         '-a', '--analysis_type', 
         help = 'TSNE or UMAP',
         required = False, 
         default = "UMAP"
 )
+
 parser.add_argument(
         '-k', '--k_value', 
         help = 'Value for k',
@@ -240,19 +237,35 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+#Assign command line inputs to variables.
+table_input = args.input 
+
+ds = dataset(table_input)
+path = Path(ds.pathToWriteOutput)
+path.mkdir(parents=True, exist_ok=True)
+
+
+# logile to go in everyoutput directory
+logFile = os.path.join(path,"README.txt")
+
 if args.verbose:
     logging.basicConfig(
+            filename = logFile,
             level = logging.DEBUG,
             format = logging_format
     )
 else:
     logging.basicConfig(
+            filename = logFile,
             level = logging.INFO,
             format = logging_format
     )
 
-#Assign command line inputs to variables.
-table_input = args.input 
+print("******************************")
+print(args)
+print("******************************")
+logging.info(args)
+
 #print(table_input)
 marker_input =  args.marker_input
 analysis_type = args.analysis_type
@@ -260,14 +273,28 @@ k = int(args.k_value)
 plot = args.plot.lower()
 analysis_type = analysis_type.lower()
 
-for input_file in table_input:
-    ds = dataset(input_file)
+#for input_file in table_input:
+#    ds = dataset(input_file)
+#    path = Path(ds.pathToWriteOutput)
+#    path.mkdir(parents=True, exist_ok=True)
+#    #os.mkdir(ds.pathToWriteOutput)
+#    os.chdir(ds.pathToWriteOutput)
+#    #Determine the directory in which to save the figures generated.
+#    sc._settings.ScanpyConfig(figdir = ds.pathToWriteOutput + 'figures/')
+#    main()
+#    logging.info("Completed input file %s.", input_file)
 
-    path = Path(ds.pathToWriteOutput)
-    path.mkdir(parents=True, exist_ok=True)
-    #os.mkdir(ds.pathToWriteOutput)
-    os.chdir(ds.pathToWriteOutput)
-    #Determine the directory in which to save the figures generated.
-    sc._settings.ScanpyConfig(figdir = ds.pathToWriteOutput + 'figures/')
-    main()
-    logging.info("Completed input file %s.", input_file)
+
+
+#os.mkdir(ds.pathToWriteOutput)
+os.chdir(ds.pathToWriteOutput)
+#Determine the directory in which to save the figures generated.
+sc._settings.ScanpyConfig(figdir = ds.pathToWriteOutput + 'figures/')
+main()
+logging.info("Completed input file %s.", table_input)
+
+
+### logging thing ###
+#logging.basicConfig(filename = ds.pathToWriteOutput+"/README.txt", encoding='utf-8', level=logging.DEBUG)
+#logging.info(params)
+
