@@ -60,6 +60,20 @@ def main():
     print("Analysing the following markers :", marker_types)
     data_X = pd.DataFrame(ds.df[marker_types].values)
     data_X.columns = marker_types
+    #distribution_crop_percentile = 0.99
+    #normalise_intensities = True
+
+    # ST now do cropping / normalisation
+    for j,stain in enumerate(marker_list):
+        # Crop the distribution
+        limit = ds.df[stain].quantile(distribution_crop_percentile)
+        ind = ds.df[stain] > limit
+        ds.df.loc[ind, stain] = limit
+    
+        # Now normalise
+        if normalise_intensities:
+            columnMax = ds.df[stain].max()
+            ds.df.loc[:,(stain)] = ds.df[stain]/ds.df[stain].max()
 
     #profile = ProfileReport(data_X, title="Pandas Profiling Report", minimal=True, progress_bar=False)
     #profile.to_file("/home/s/staylor/hyperion/SpOOx/src/output.html")
@@ -229,6 +243,20 @@ parser.add_argument(
         required = False, 
         default = "2d"
 )
+
+parser.add_argument(
+        '-n','--normalise_intensities', 
+        dest='normalise_intensities', 
+        default=False, 
+        action='store_true',
+        help='Rescale the intensity distributions to the range [0,1]. If applicable, rescaling happens after taking an arcsinh transform or capping intensity values to a fixed percentile')
+
+parser.add_argument(
+        '-d','--distribution_crop_percentile',
+        help='After transforming the mean intensity data, this argument allows any data above the \'distribution_crop_percentile\' to be capped at that percentile, effectively trimming the data above that threshold to that level',
+        type=float,
+        default=0.99)
+
 parser.add_argument(
         '-v', '--verbose', 
         action = 'store_true', 
@@ -269,6 +297,9 @@ logging.info(args)
 #print(table_input)
 marker_input =  args.marker_input
 analysis_type = args.analysis_type
+normalise_intensities = args.normalise_intensities
+distribution_crop_percentile = args.distribution_crop_percentile
+
 k = int(args.k_value)
 plot = args.plot.lower()
 analysis_type = analysis_type.lower()
