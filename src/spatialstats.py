@@ -34,6 +34,7 @@ def main():
         ) 
         parser.add_argument(
                 '-o', '--output', 
+		help = 'Path to write all the outputs to.',
                 required = True
         ) 
         parser.add_argument(
@@ -195,7 +196,7 @@ def quadratCounts(ds, df_annotations, colors, clusterNames, r, VMRs):
         plt.figure(figsize=(12,9))
         g = sns.heatmap(r, cmap='RdBu_r', vmin=-1, vmax=1, annot=False, xticklabels=clusterNames.values(), yticklabels=clusterNames.values())
         plt.title('Quadrat counts: correlation coefficient')
-        plt.savefig(pathToWriteOutput + ds.name + '__QuadratCountsCorrelationCoefficient.png',bbox_inches='tight')
+        plt.savefig(ds.pathToWriteOutput + ds.name + '__QuadratCountsCorrelationCoefficient.png',bbox_inches='tight')
 
         plt.figure(figsize=(12,12))
         plt.scatter(VMRs,df_annotations.ClusterNumber,c=colors,s=400)
