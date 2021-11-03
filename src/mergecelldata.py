@@ -87,10 +87,7 @@ excludeList = args.excludeList
 allCellDataFiles = FindAll(directory, indir)
 print("Initial data files to process",allCellDataFiles)
 
-print(">>>>>",len(excludeList)>0)
-
-
-if (len(excludeList)>0):
+if (args.excludeList):
     allCellDataFiles = [sent for sent in allCellDataFiles 
         if not any(word in sent for word in excludeList)]
     print("Remaining files after exclusion:",allCellDataFiles)
