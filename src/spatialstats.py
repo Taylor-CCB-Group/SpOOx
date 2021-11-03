@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils_alt import dataset, EfficientPCF_AtoB, plotPCFWithBootstrappedConfidenceInterval
+from utils_alt import dataset, EfficientPCF_AtoB, plotPCFWithBootstrappedConfidenceInterval, plotPCF
 import matplotlib.path as mpltPath
 import skimage
 from pathlib import Path
@@ -265,8 +265,8 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                         N1 = len(p1)
                 #         bootstrapSamples = CalculateBootstrapAroundCSRForPValues(N0, N1, ds.domainX, ds.domainY, dr, maxR, numBootstrapSamples=100)
                         # plt.figure(figsize=(12,9))
-                        # plotPCF(plt.gca(), radii, g, label=indication)
-                        plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p0, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
+                        plotPCF(plt.gca(), radii, g, label=ds.indication)
+                        #plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p0, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
                         plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
                 #       assert(1==2)
                 #       plt.show()
