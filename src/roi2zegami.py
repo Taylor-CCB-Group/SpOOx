@@ -42,12 +42,17 @@ def roi2images(src_dir,dest_dir,zegami_tsv):
         print("dest_image ", dest_image)
         print("sample_name ", sample_name)
         
+        #full condition / sample / id
+        x =  re.search(r"^(\w+_SAMPLE_\d+_ROI_\d+)", sample_name)
+        full_sample_name = x.group(1)
+        print("full_sample_name = "+ full_sample_name)
+
         #disease name
         x =  re.search(r"^(\S+?)_", sample_name)
         disease = x.group(1);
         print("disease = "+ disease)
         
-        # get sample name
+        # get sample id
         x =  re.search(r"_SAMPLE_(\d+)_", sample_name)
         sample_id = x.group(1);
         print("sample_id = "+ sample_id)
@@ -74,7 +79,7 @@ def roi2images(src_dir,dest_dir,zegami_tsv):
             print(protein, metal)
             
             # write the line of to the tsv
-            fields = (dest_image,sample_id,replicate,roi,protein, metal)
+            fields = (dest_image,full_sample_name,sample_id,replicate,roi,protein, metal)
             print("Writing to",fields,"to",output_tsv)
             f.write(tab.join(fields))
             f.write("\n")
@@ -138,7 +143,7 @@ output_format = "png"
 
 output_tsv = dest_dir + '/' + 'zegami.tsv'
 f = open(output_tsv,'w')
-f.write("ImageFile\tsample_name\treplicate\troi\tprotein\tmetal\n")
+f.write("ImageFile\tfull_sample_name\tsample_name\treplicate\troi\tprotein\tmetal\n")
 
 onlydirs = [d for d in listdir(project_dir) if os.path.isdir(join(project_dir, d))]
 for dir in onlydirs:   
