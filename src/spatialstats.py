@@ -11,10 +11,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils_alt import dataset, EfficientPCF_AtoB, plotPCFWithBootstrappedConfidenceInterval, plotPCF
+from utils_alt import dataset, crossPCF, getAnnulusAreasAroundPoints, plotPCFWithBootstrappedConfidenceInterval
 import matplotlib.path as mpltPath
 import skimage
 from pathlib import Path
+from scipy.spatial.distance import cdist
 
 sns.set_style('white')
 sns.set(font_scale=2)
@@ -58,10 +59,10 @@ def main():
 
         args = parser.parse_args()
 
-        pathToData = args.pathToData 
-        pathToWriteOutput = args.output
-        cluster_annotations = args.cluster_annotations
-        functions = args.functions
+        pathToData = '/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#args.pathToData 
+        pathToWriteOutput = '/Filers/home/j/jbull/Temp/'#args.output
+        cluster_annotations = '/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#args.cluster_annotations
+        functions = ['paircorrelationfunction']#args.functions
      
         if bool(functions) == False:
                 print("Running all functions:")
@@ -243,6 +244,7 @@ def quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts):
         print("Quadrat cell distributions completed.")
 
 def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
+<<<<<<< HEAD
         #PART 9 - Cell-cell methods
         # Comute Pair-correlation function
         maxR_mum = 100
@@ -272,26 +274,91 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                 #       plt.show()
                         plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
                 #        plt.close()
+=======
+    # Compute the crossPCF between each pairwise combination of clusters
+    maxR_mum = 300
+    dr_mum = 10
+
+    # First we pre-calculate the area around each point (within the domain)
+    areas = {}
+    allPoints = {}
+    for i, cluster in enumerate(df_annotations.ClusterNumber):
+        print('Cluster',cluster)
+
+        p0 = ds.points[ds.df[clusteringToUse] == int(cluster)]
+        p0_areas = getAnnulusAreasAroundPoints(p0, dr_mum, maxR_mum, ds.domainX, ds.domainY)
+        allPoints[cluster] = p0
+        areas[cluster] = p0_areas
+      
+    # Now we use that to find the PCFs
+    gs = np.zeros(shape=(len(df_annotations.ClusterNumber), len(df_annotations.ClusterNumber), len(np.arange(0,maxR_mum,dr_mum))))
+    for a, clusterA in enumerate(df_annotations.ClusterNumber):
+        for b, clusterB in enumerate(df_annotations.ClusterNumber):
+            pair = [clusterA, clusterB]
+            print(pair)
+            
+            p_A = allPoints[clusterA]# ds.points[ds.df[clusteringToUse] == int(pair[0])]    
+            p_B = allPoints[clusterB]#ds.points[ds.df[clusteringToUse] == int(pair[1])]
+                   
+            density_B = np.shape(p_B)[0]/(ds.domainX*ds.domainY)
+            
+            areas_A = areas[clusterA]
+            areas_B = areas[clusterB]
+            
+            distances_AtoB = cdist(p_A, p_B, metric='euclidean')
+            radii, g, contributions = crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum)
+            gs[a, b, :] = g.transpose()[0]
+     
+            plt.figure(figsize=(12,9))
+            plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
+            plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
+            plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
+         
+    print("Pair correlation function completed.")   
+    # OLD VERSION - to be deleted when tested
+        # # lengths = []
+        # for a, clusterA in enumerate(df_annotations.ClusterNumber):
+        #         for b, clusterB in enumerate(df_annotations.ClusterNumber):
+        #                 plt.figure(figsize=(12, 9))
+        #                 print(a,b)
+
+        #                 pair = [clusterA, clusterB]
+        #                 p0 = ds.points[ds.df[clusteringToUse] == int(pair[0])]
+        #                 p1 = ds.points[ds.df[clusteringToUse] == int(pair[1])]
+        #         #         lengths.append(len(p0))
+        #                 g, radii, contributions = EfficientPCF_AtoB(p0, p1, ds.domainX, ds.domainY, dr_mum, maxR_mum)
+        #                 gs[a, b, :] = g
+        #                 N0 = len(p0)
+        #                 N1 = len(p1)
+        #         #         bootstrapSamples = CalculateBootstrapAroundCSRForPValues(N0, N1, ds.domainX, ds.domainY, dr, maxR, numBootstrapSamples=100)
+        #                 # plt.figure(figsize=(12,9))
+        #                 # plotPCF(plt.gca(), radii, g, label=indication)
+        #                 plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p0, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
+        #                 plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
+                # #       assert(1==2)
+                # #       plt.show()
+                #         plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
+                # #        plt.close()
         # plt.legend()
         # plt.close()
         # plt.show()
         # plt.close('all')
-        print("Pair correlation function completed.")
+        # print("Pair correlation function completed.")
 
 
-        #PART 10 - Make a heatmap
-        #plt.imshow(gs[:,:,1],cmap='RdBu_r',vmin=0,vmax=2)
+    #PART 10 - Make a heatmap
+    #plt.imshow(gs[:,:,1],cmap='RdBu_r',vmin=0,vmax=2)
+    for radius in [1,2]:
         fig = plt.figure(figsize=(11, 9))
-        radius = 1
         labs = clusterNames.values()
         g = sns.heatmap(gs[:, :, radius], cmap='RdBu_r', vmin=0, vmax=2, annot=True, xticklabels=labs, yticklabels=labs, cbar_kws={'label': '$g(r=' + str(radii[radius]) + '\mu m)$'})
         # plt.title(indications[i] + ' - ' + str(radii[radius]) + '$\mu$m')
         plt.title(ds.name + ' - ' + str(radii[radius]) + '$\mu$m')
         # fig.autofmt_xdate()
-        plt.savefig(ds.pathToWriteOutput + ds.name + '_PCF_Heatmap.png',bbox_inches='tight')
+        plt.savefig(ds.pathToWriteOutput + ds.name + '_PCF-Heatmap' + str(radii[radius]) + '-micrometers.png',bbox_inches='tight')
         # Make graph image
         # Save everything
-        print("Heatmap completed.")
+    print("Heatmap completed.")
 
 
 main()
