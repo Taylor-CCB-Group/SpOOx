@@ -29,19 +29,18 @@ if len(sys.argv)==1:
 
 args = parser.parse_args()
 
-def ListDirs(rootdir):
+def RenameDirs(rootdir):
     for it in os.scandir(rootdir):
         # check if the directory or symlink (for nextflow) exists and contains the pattern specified
         if (it.is_dir() or it.is_symlink()) and args.pattern in it.name:
-            print(it.path)
             x =  re.search(r"_s0_a(\d+)_ac$", it.path)
-            roi = x.group(1);
-            print("roi = "+ roi)
+            roi = x.group(1)
+            print("ROI = "+ roi)
             fullPath = os.path.abspath(it.path)
             basePath = os.path.abspath(it.path + "/..")
             newPath = basePath + "/" + args.disease_sample + "_ROI_"+roi
-            print("Renaming to " + newPath)
+            print("Renaming " + fullPath + " to " + newPath)
             #os.rename(fullPath, newPath)
-            os.system("mv " + fullPath +" " + newPath)
+            os.system("mv " + '"' + fullPath + '"' + " " + newPath)
 	    
-ListDirs(args.indir)
+RenameDirs(args.indir)
