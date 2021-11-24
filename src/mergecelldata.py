@@ -41,10 +41,10 @@ def AppendFiles(dirList, inputFile, outputFile):
     outputDir = os.path.dirname(outputFile)
     beforeClean = os.path.join(outputDir,"beforecleaning.tab")
     pandasReport = os.path.join(outputDir,"pandasprofile.html")
-    # gets rid of any columns that don't line up
+    # gets rid of any columns that don't line up with the header
     afterClean = df.dropna(axis='columns')
-    afterClean.to_csv(outputFile,sep="\t")
-    df.to_csv(beforeClean,sep="\t")
+    afterClean.to_csv(outputFile,sep="\t", index=False)
+    df.to_csv(beforeClean,sep="\t", index=False)
     profile = ProfileReport(df, title="Pandas Profiling Report", minimal=True, progress_bar=False)
     profile.to_file(pandasReport)
 
