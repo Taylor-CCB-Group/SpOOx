@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+DESC = ("Copies the black and white mask images to zegami directory so it can be visualised. Should be run after deepcell but before Zegami collection upload.")
+
 import cv2
 from os import listdir, mkdir, read
 from os.path import isfile, join
@@ -38,8 +40,6 @@ def File2List(file):
     for line in fileobj:
         lines.append(line.strip())
     return lines
-
-
 
 def TiffNorm(src_image,dest_image):
     img = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
@@ -112,21 +112,6 @@ condition=elements[-4]
 sample=elements[-3]
 roi=elements[-2]
 newName=condition+"_"+sample+"_"+roi+".png"
-
-#check if various files exist then copy them to the zegami output directory
-#if(os.path.isfile(imageNucFlatNorm)):
-#    zegami_deepcell_nuc_dir = os.path.join(zegamiDir, "deepcell_nuc")
-#    zegami_deepcell_nuc_file = os.path.join(zegami_deepcell_nuc_dir,newName) 
-#    mkdir(zegami_deepcell_nuc_dir)
-#    print("copying",imageNucFlatNorm,"to",zegami_deepcell_nuc_file)
-#    os.system("cp "+imageNucFlatNorm+" "+zegami_deepcell_nuc)
-#
-#if(os.path.isfile(imageCytFlatNorm)):
-#    zegami_deepcell_cyt = os.path.join(zegamiDir, "deepcell_cyt")
-#    zegami_deepcell_cyt_file = os.path.join(zegami_deepcell_cyt,newName) 
-#    mkdir(zegami_deepcell_cyt)
-#    print("copying",imageNucFlatNorm,"to",zegami_deepcell_cyt_file)
-#    os.system("cp "+imageNucFlatNorm+" "+zegami_deepcell_cyt_file)
 
 if(os.path.isfile(bwImageOut)):
     zegami_deepcell_mask_dir = os.path.join(zegamiDir,"deepcell_mask")
