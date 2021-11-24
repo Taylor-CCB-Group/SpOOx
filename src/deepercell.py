@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from PIL.Image import composite
 import cv2
 from os import listdir, read
 from os.path import isfile, join
@@ -99,10 +100,15 @@ parser.add_argument('--contrast',type=int,
 # Note default is 1 which is hyperion specific
 parser.add_argument('--imageMpp', dest='imageMpp', default = 1,
                     help='microns per pixel')		
-    
+# overwrite the image directory
+parser.add_argument('--overwrite', dest='overwrite', default = False,
+                    help='If a deepcell file exists overwrite it if true.')	
+
+
 if len(sys.argv)==1:
     parser.print_help(sys.stderr)
     sys.exit(1)		   
+
 
 args = parser.parse_args()
 os.makedirs(args.imageOutDir,exist_ok=True)
@@ -119,8 +125,20 @@ imageNucFlat = os.path.join(args.imageOutDir,'nuc_flat.tif')
 imageCytFlat = os.path.join(args.imageOutDir,'cyt_flat.tif')
 imageNucFlatNorm = os.path.join(args.imageOutDir,'nuc_flat_norm.tif')
 imageCytFlatNorm = os.path.join(args.imageOutDir,'cyto_flat_norm.tif')
+imageNucFlatNormPNG = os.path.join(args.imageOutDir,'nuc_flat_norm.png')
+imageCytFlatNormPNG = os.path.join(args.imageOutDir,'cyto_flat_norm.png')
 imageOut = os.path.join(args.imageOutDir,"deepcell.tif")
+mergedImage = os.path.join(args.imageOutDir,"mergenucandcyt.png")
 bwImageOut = os.path.join(args.imageOutDir,"bandwmask.png")
+
+
+print("*** Analysing",args.dirName," ***")
+
+
+#check if deepcell.tif exists
+if(os.path.isfile(imageOut) and args.overwrite == False):
+    print(imageOut," already exists ")
+    quit()
 
 
 # get the file and convert to a list
@@ -136,29 +154,46 @@ Tiff2Stack(imageNuc,nucList,args.dirName)
 print("Assembling cytoplasmic channel containing ", cytoList)
 Tiff2Stack(imageCyt,cytoList,args.dirName)
 
-# now import the deepcell stuff
-from deepcell.applications import Mesmer
 
 # Z project and flatten nuc to 1 image
 im1 = imread(imageNuc)
 im1Flattened = np.max(im1,axis=0)
 imsave(imageNucFlat,im1Flattened)
+print("Converting ",imageNuc,"to flattened ",imageNucFlat," using ",im1Flattened)
 
 # Z project and flatten cyt to 1 image
 im2 = imread(imageCyt)
 im2Flattened = np.max(im2,axis=0)
 imsave(imageCytFlat,im2Flattened)
+print("Converting ",imageCyt," to flattened ",imageCytFlat," using ",im2Flattened)
+
 
 #enhance contrast on image
 TiffNorm(imageNucFlat, imageNucFlatNorm)
 TiffNorm(imageCytFlat, imageCytFlatNorm)
 
-im1_f_n = imread(imageNucFlatNorm)
-im2_f_n = imread(imageCytFlatNorm)
+imNuc = imread(imageNucFlatNorm)
+imCyt = imread(imageCytFlatNorm)
+height=imNuc.shape[0]
+width=imNuc.shape[1]
+blankImage = np.zeros((height,width), np.uint16)
+#mask = cv2.inRange(imNuc, imCyt, (255,255,255))
+
+# write out png version of the image
+cv2.imwrite(imageNucFlatNormPNG,imNuc)
+cv2.imwrite(imageCytFlatNormPNG,imCyt)
+#overlay the images
+m = np.dstack((imNuc,imCyt,imNuc))
+#m = np.dstack((imNuc,imCyt,mask))
+cv2.imwrite(mergedImage,m)
+
 
 # Combined together and expand to 4D
-im = np.stack((im1_f_n, im2_f_n), axis=-1)
+im = np.stack((imNuc, imCyt), axis=-1)
 im = np.expand_dims(im,0)
+
+# now import the deepcell stuff
+from deepcell.applications import Mesmer
 
 # Create the application
 app = Mesmer()
