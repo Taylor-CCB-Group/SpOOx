@@ -59,10 +59,10 @@ def main():
 
         args = parser.parse_args()
 
-        pathToData = '/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#args.pathToData 
-        pathToWriteOutput = '/Filers/home/j/jbull/Temp/'#args.output
-        cluster_annotations = '/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#args.cluster_annotations
-        functions = ['paircorrelationfunction']#args.functions
+        pathToData = args.pathToData#'/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#
+        pathToWriteOutput = args.output#'/Filers/home/j/jbull/Temp1/'#
+        cluster_annotations = args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
+        functions = args.functions
      
         if bool(functions) == False:
                 print("Running all functions:")
@@ -82,7 +82,7 @@ def main():
 
         #Calling the functions.
         functions = [x.casefold() for x in functions]
-        if 'quadratcounts' in functions or 'quadratcelldistributions' in functions:
+        if 'quadratcounts' in functions or 'quadratcelldistributions' in functions or 'moruetaholme' in functions:
                 r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringToUse)
 
         for i in functions:
@@ -145,6 +145,7 @@ def contourPlots(ds, df_annotations, clusteringToUse, clusterNames):
 
 def quadratMethods(ds, df_annotations, clusteringToUse):
         #PART 6 - Time to implement some quadrat methods
+        
         quadratEdgeLength = 100 # microns
         x = np.arange(0,ds.domainX,quadratEdgeLength)
         y = np.arange(0,ds.domainY,quadratEdgeLength)
@@ -163,27 +164,47 @@ def quadratMethods(ds, df_annotations, clusteringToUse):
                         quadrats.append(vertices)
         assert(nQuadrats == len(quadrats))
 
-        counts = np.zeros(shape=(nQuadrats,len(df_annotations.ClusterNumber)))
-        totals = np.zeros(shape=(len(df_annotations.ClusterNumber)))
+        nSpecies = len(df_annotations.ClusterNumber)
+        counts = np.zeros(shape=(nQuadrats,nSpecies))
+        # totals = np.zeros(shape=(nSpecies))
+        
+        i = 0
+        celllabels = ds.df[clusteringToUse]
+        for xi in range(nx-1):
+            for yi in range(ny-1):
+                px = (ds.points[:,0] >= x[xi]) & (ds.points[:,0] < x[xi+1])
+                py = (ds.points[:,1] >= y[yi]) & (ds.points[:,1] < y[yi+1])
+                mask = px & py
+                labs = celllabels[mask]
+                for ind, key in enumerate(df_annotations.ClusterNumber):          
+                    counts[i,ind] = sum(labs == key)
+                i = i + 1
 
         VMRs = []
-        means = []
-        variances = []
         for ind, cl in enumerate(df_annotations.ClusterNumber):
-                p = ds.points[ds.df[clusteringToUse] == int(cl)]
-                totals[ind] = len(p)
-                for i in range(nQuadrats):
-                        path = mpltPath.Path(quadrats[i])
-                        inside2 = path.contains_points(p)
-                        count = sum(inside2)
-                        counts[i,ind] = count
-
                 mean = np.nanmean(counts[:,ind])
                 variance = np.nanstd(counts[:,ind])**2
                 VMR = variance / mean
-                VMRs.append(VMR)
-                means.append(mean)
-                variances.append(variance)
+                VMRs.append(VMR)            
+            
+        # VMRs = []
+        # means = []
+        # variances = []
+        # for ind, cl in enumerate(df_annotations.ClusterNumber):
+        #         p = ds.points[ds.df[clusteringToUse] == int(cl)]
+        #         totals[ind] = len(p)
+        #         for i in range(nQuadrats):
+        #                 path = mpltPath.Path(quadrats[i])
+        #                 inside2 = path.contains_points(p)
+        #                 count = sum(inside2)
+        #                 counts[i,ind] = count
+
+        #         mean = np.nanmean(counts[:,ind])
+        #         variance = np.nanstd(counts[:,ind])**2
+        #         VMR = variance / mean
+        #         VMRs.append(VMR)
+        #         means.append(mean)
+        #         variances.append(variance)
 
         r = np.corrcoef(counts.transpose())
 
@@ -245,34 +266,6 @@ def quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts):
 
 def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
         #PART 9 - Cell-cell methods
-        # Comute Pair-correlation function
-        maxR_mum = 100
-        dr_mum = 10
-
-        gs = np.zeros(shape=(len(df_annotations.ClusterNumber), len(df_annotations.ClusterNumber), len(np.arange(0,maxR_mum,dr_mum))))
-        # lengths = []
-        for a, clusterA in enumerate(df_annotations.ClusterNumber):
-                for b, clusterB in enumerate(df_annotations.ClusterNumber):
-                        plt.figure(figsize=(12, 9))
-                        print(a,b)
-
-                        pair = [clusterA, clusterB]
-                        p0 = ds.points[ds.df[clusteringToUse] == int(pair[0])]
-                        p1 = ds.points[ds.df[clusteringToUse] == int(pair[1])]
-                #         lengths.append(len(p0))
-                        g, radii, contributions = EfficientPCF_AtoB(p0, p1, ds.domainX, ds.domainY, dr_mum, maxR_mum)
-                        gs[a, b, :] = g
-                        N0 = len(p0)
-                        N1 = len(p1)
-                #         bootstrapSamples = CalculateBootstrapAroundCSRForPValues(N0, N1, ds.domainX, ds.domainY, dr, maxR, numBootstrapSamples=100)
-                        # plt.figure(figsize=(12,9))
-                        plotPCF(plt.gca(), radii, g, label=ds.indication)
-                        #plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p0, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
-                        plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
-                #       assert(1==2)
-                #       plt.show()
-                        plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
-                #        plt.close()
         # Compute the crossPCF between each pairwise combination of clusters
         maxR_mum = 300
         dr_mum = 10
