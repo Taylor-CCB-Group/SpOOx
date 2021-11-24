@@ -54,6 +54,7 @@ def HistocatToTree(inDir,outDir):
         #shutil.copytree(pathToHistocatROI,pathToHistocatTreeLocation)
         # only copy across histocate files if they have been update compared to destination
         #print("cp -R -u -p "+pathToHistocatROI+" "+pathToHistocatTreeLocation);
+        # u p flag only copies a file if it doesn't exist in the destination
         os.system("cp -R -u -p "+pathToHistocatROI+" "+pathToHistocatTreeLocation)
 
 def ParseName(file, outDir):
