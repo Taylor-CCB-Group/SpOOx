@@ -273,7 +273,7 @@ path = Path(ds.pathToWriteOutput)
 path.mkdir(parents=True, exist_ok=True)
 
 
-# logile to go in everyoutput directory
+# logfile to go in every output directory
 logFile = os.path.join(path,"README.txt")
 
 if args.verbose:
