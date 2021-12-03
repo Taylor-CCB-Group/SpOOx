@@ -11,11 +11,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils_alt import dataset, crossPCF, getAnnulusAreasAroundPoints, plotPCFWithBootstrappedConfidenceInterval
+from utils_alt import dataset,dataset_filterSampleID, crossPCF, getAnnulusAreasAroundPoints, plotPCFWithBootstrappedConfidenceInterval, changeSomeElements
 import matplotlib.path as mpltPath
 import skimage
 from pathlib import Path
 from scipy.spatial.distance import cdist
+import pickle
+from statsmodels.stats.multitest import fdrcorrection
 
 sns.set_style('white')
 sns.set(font_scale=2)
@@ -44,9 +46,14 @@ def main():
                 required = True
         )
         parser.add_argument(
+                '-cl', '--clusteringToUse', 
+                help = 'Name of column in the file specified by pathToData to use as the clustering label. Should correspond with the annotations in cluster_annotations',
+                required = True
+        ) 
+        parser.add_argument(
                 '-f', '--functions',
                 nargs = '+', 
-                help = 'Input the functions that are to be carried out (celllocationmap, contourplots, quadratcounts, quadratcelldistributions, paircorrelationfunction). If no argument is given, all functions will be carried out.',
+                help = 'Input the functions that are to be carried out (celllocationmap, contourplots, quadratcounts, quadratcelldistributions, paircorrelationfunction, morueta-holme). If no argument is given, all functions will be carried out.',
                 required = False
         ) 
         parser.add_argument(
@@ -62,55 +69,84 @@ def main():
         pathToData = args.pathToData#'/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#
         pathToWriteOutput = args.output#'/Filers/home/j/jbull/Temp1/'#
         cluster_annotations = args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
+        clusteringToUse = args.clusteringToUse
+        # pathToData = '/stopgap/hyperion/lho/tmp/COVID_SAMPLE_9_COVID_SAMPLE_10_COVID_SAMPLE_11_COVID_SAMPLE_15_cellData_Harmonyclustered.txt'#args.pathToData#'/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#
+        # pathToWriteOutput = '/Filers/home/j/jbull/Temp'#args.output#'/Filers/home/j/jbull/Temp1/'#
+        # cluster_annotations = '/stopgap/hyperion/lho/tmp/annotations.tab'#args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
+        # clusteringToUse = 'harmony_phenograph_exprs'#args.clusteringToUse
         functions = args.functions
      
         if bool(functions) == False:
                 print("Running all functions:")
-                functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','networkdiagram']
+                functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','networkdiagram','morueta-holme']
 
-        df_annotations, ds = preprocessing(pathToData, cluster_annotations)
+        df_annotations, datasets = preprocessing(pathToData, cluster_annotations)
         #todo should not need to add a / 
-        ds.pathToWriteOutput = pathToWriteOutput+"/"
-        clusteringToUse = 'phenoGraph_cluster' ###ADD to cmd line?
-        colors = [plt.cm.tab20(v) for v in range(len(df_annotations.ClusterNumber))]
-        clusterNames = {df_annotations.ClusterNumber.iloc[v] : df_annotations.Annotation.iloc[v].strip() for v in range(len(df_annotations))}
-
-        #make an output directory
-        Path(pathToWriteOutput).mkdir(parents=True, exist_ok=True)
-        print("Output file directory created.")
-
-
-        #Calling the functions.
-        functions = [x.casefold() for x in functions]
-        if 'quadratcounts' in functions or 'quadratcelldistributions' in functions or 'moruetaholme' in functions:
-                r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringToUse)
-
-        for i in functions:
-                if i == 'celllocationmap':
-                        cellLocationMap(ds, df_annotations, clusteringToUse, clusterNames, colors)
-                if i == 'contourplots':
-                        contourPlots(ds, df_annotations, clusteringToUse, clusterNames)
-                if i == 'quadratcounts':
-                        quadratCounts(ds, df_annotations, colors, clusterNames, r, VMRs)
-                if i == 'quadratcelldistributions':
-                        quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts)
-                if i == 'paircorrelationfunction':
-                        pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames)
+        
+        for ds in datasets:
+            ds.pathToWriteOutput = pathToWriteOutput+"/"
+            #clusteringToUse = 'phenoGraph_cluster' ###ADD to cmd line?
+            colors = [plt.cm.tab20(v) for v in range(len(df_annotations.ClusterNumber))]
+            clusterNames = {df_annotations.ClusterNumber.iloc[v] : df_annotations.Annotation.iloc[v].strip() for v in range(len(df_annotations))}
+    
+            #make an output directory
+            Path(pathToWriteOutput).mkdir(parents=True, exist_ok=True)
+            print("Output file directory created.")
+    
+            #Calling the functions.
+            functions = [x.casefold() for x in functions]
+            if 'quadratcounts' in functions or 'quadratcelldistributions' in functions or 'morueta-holme' in functions:
+                    r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringToUse)
+    
+            for i in functions:
+                    if i == 'celllocationmap':
+                            cellLocationMap(ds, df_annotations, clusteringToUse, clusterNames, colors)
+                    if i == 'contourplots':
+                            contourPlots(ds, df_annotations, clusteringToUse, clusterNames)
+                    if i == 'quadratcounts':
+                            quadratCounts(ds, df_annotations, colors, clusterNames, r, VMRs)
+                    if i == 'quadratcelldistributions':
+                            quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts)
+                    if i == 'morueta-holme':
+                            moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, counts)
+                    if i == 'paircorrelationfunction':
+                            pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames)
 
 
 
 def preprocessing(pathToData, cluster_annotations):
+        # Filter dataframe to ensure spatial stats are only applied to the same sample   
+        df = pd.read_csv(pathToData,delimiter='\t')
+        uniqueSamples = np.unique(df['sample_id'])
+        datasets = []
+        
+        if len(uniqueSamples) == 1:
+            ds = dataset(pathToData)
+            datasets.append(ds)
+        elif len(uniqueSamples) > 1:
+            # Split it up, return multiple datasets
+            for sample_id in uniqueSamples:
+                print('Preparing',sample_id)
+                ds = dataset_filterSampleID(pathToData,sample_id)
+                datasets.append(ds)
+        else:
+            print('No samples found')
+            assert(1==2)
+            #todo Throw a proper error dealing with this
+        
+        
         #PART 1 - Preprocess main data table & make path to write output.
-        ds = dataset(pathToData)
-        print("Main data table processed.")
+        #ds = dataset(pathToData)
+        print("Main data tables processed.")
         
         #PART 2 - Preprocess annotation table.
         df_annotations = pd.read_csv(cluster_annotations, delimiter='\t')
-        # Find the correct ROI.
+        # Put into annoying format
+        df_annotations.ClusterNumber = ['cl' + f"{v:02d}" for v in  df_annotations.ClusterNumber]        # Find the correct ROI.
         #df_annotations = df_clusterAnnotations[(df_clusterAnnotations.Indication.str.casefold()==ds.indication.casefold()) & (df_clusterAnnotations.Sample.str.casefold()==ds.sample.casefold()) & (df_clusterAnnotations.ROI.str.casefold()==ds.roi.casefold())]
         print("Annotation table processed.")
         
-        return df_annotations, ds
+        return df_annotations, datasets
         
 
 def cellLocationMap(ds, df_annotations, clusteringToUse, clusterNames, colors):
@@ -118,13 +154,14 @@ def cellLocationMap(ds, df_annotations, clusteringToUse, clusterNames, colors):
         plt.figure(figsize=(12,12))
         plt.title(ds.name)
         for i, cl in enumerate(df_annotations.ClusterNumber):
-                p = ds.points[ds.df[clusteringToUse] == int(cl)]
+                p = ds.points[ds.df[clusteringToUse] == cl]
                 plt.scatter(p[:,0],p[:,1],color=colors[i],s=10,label=clusterNames[cl] + ' (cluster ' + str(cl) + ')')
         plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0)
         plt.axis('square')
         plt.xlim([0,ds.domainX])
         plt.ylim([0,ds.domainY])
         plt.savefig(ds.pathToWriteOutput + ds.name + '__Overview.png',bbox_inches='tight')
+        plt.close()
         print("Cell location map completed.")
 
 
@@ -132,14 +169,16 @@ def contourPlots(ds, df_annotations, clusteringToUse, clusterNames):
         #PART 5
         for i, cl in enumerate(df_annotations.ClusterNumber):
                 plt.figure(figsize=(12, 9))
-                p = ds.points[ds.df[clusteringToUse] == int(cl)]
-                plotting_points = pd.DataFrame(np.array(p), columns=['x', 'y'])
-                ax = sns.kdeplot(data=plotting_points, shade=True, cmap="PuRd", cut=0, levels=15)#200
-                ax.axis('square')
-                plt.title(clusterNames[cl] + ' (cluster ' + str(cl) + ')')
-                plt.xlim([0, ds.domainX])
-                plt.ylim([0, ds.domainY])
-                plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[cl] + ' (cluster ' + str(cl) + ')' + '_KDEplot.png',bbox_inches='tight')
+                p = ds.points[ds.df[clusteringToUse] == cl]
+                if np.shape(p)[0]>20:
+                    plotting_points = pd.DataFrame(np.array(p), columns=['x', 'y'])
+                    ax = sns.kdeplot(data=plotting_points,x='x',y='y', shade=True, palette="PuRd", cut=0, levels=15)#200
+                    ax.axis('square')
+                    plt.title(clusterNames[cl] + ' (cluster ' + str(cl) + ')')
+                    plt.xlim([0, ds.domainX])
+                    plt.ylim([0, ds.domainY])
+                    plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[cl] + ' (cluster ' + str(cl) + ')' + '_KDEplot.png',bbox_inches='tight')
+                    plt.close()
         print("Contour plots completed.")
 
 
@@ -263,6 +302,177 @@ def quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts):
         #     print(chi_sq, p)
 
         print("Quadrat cell distributions completed.")
+        
+def moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, counts):
+        print('Calculating MH Association matrix for',ds.df.sample_id.iloc[0])
+        # Calculate cell association matrix following the method from Morueta-Holme et al 2016 DOI: 10.1111/ecog.01892
+        O = counts.transpose()
+        clusterNames_MH = list(clusterNames.values())
+        
+        # If any species is not represented in this sample, O will be singular and hence non-invertible
+        # So we get rid of any cell types that aren't present in the sample
+        if len(np.where(np.sum(counts,axis=0) == 0)) > 0:
+            toExclude = list(np.where(np.sum(counts,axis=0) == 0)[0])
+            O = np.delete(O,toExclude,0)
+            clusterNames_MH = np.delete(clusterNames_MH,toExclude,0)
+        
+        nSpecies = len(clusterNames_MH)
+        # STEP ONE:
+        # Calculate the observed species x site community matrix, O (nSpecies x nQuadrats)
+        
+        assert(np.shape(O)[0] == nSpecies)
+        
+        # STEP TWO:
+        # Calculate the expected abundance matrix, N (nSpecies x nQuadrats)
+        # Randomise O to create N, keeping row sums (total species) and column sums (site abundances) fixed
+        # First, shuffle O 10000 times to avoid transient effects
+        matrix = O.copy()
+        i = 0
+        while i < 10000:
+            matrix, success = changeSomeElements(matrix)
+            if success:
+                i = i + 1
+        
+        # Now we get 1000 matrices N
+        i = 0
+        Ns = []
+        print('Shuffling matrix')
+        while i < 1000:
+            # Do 500 shuffles in between each N
+            if i % 25 == 0:
+                print('\t\t', i, 'of',1000)
+            j = 0
+            while j < 500:
+                matrix, success = changeSomeElements(matrix)
+                if success:
+                    j = j + 1
+            out = matrix.copy()
+            Ns.append(out)
+            i = i + 1
+        Ns = np.asarray(Ns)
+        
+        # OK, we now have 1000 matrices with randomly shuffled values such that the row and column sums are the same!
+        # That was a faff.
+        
+        # STEP THREE:
+        # Calculate the covariance matrix Sigma for each of O and N
+        # Use Sigma to calculate the partial correlation matrix C(O) and C(N) (nSpecies x nSpecies)
+        # C_ij (M) = -Sigma^-1_ij (M) / sqrt(  Sigma^-1_ii (M) . Sigma^-1_jj (M)   )
+        # Repeat for MANY resamples of N
+        
+        def getCFromSigma_inv(Sigma_inv):
+            C = np.zeros(np.shape(Sigma_inv))
+            for i in range(len(Sigma_inv)):
+                for j in range(len(Sigma_inv)):
+                    C[i,j] = -Sigma_inv[i,j] / np.sqrt(Sigma_inv[i,i] * Sigma_inv[j,j])
+            return C
+        
+        Sigma_O = np.cov(O)
+        Sigma_O_inv = np.linalg.inv(Sigma_O)
+        C_O = getCFromSigma_inv(Sigma_O_inv)
+        # Fix the main diagonal for plotting
+        C_O_plot = C_O + 2*np.identity(nSpecies)
+        plt.figure(figsize=(12,12))
+        plt.imshow(C_O_plot,cmap='RdBu_r',vmin=-1,vmax=1)
+        plt.colorbar()
+        plt.xticks(ticks=np.arange(0,nSpecies),labels=clusterNames_MH,rotation=90)
+        plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames_MH)
+        plt.savefig(ds.pathToWriteOutput + ds.name + '_PartialCorrelation.png',bbox_inches='tight')
+        plt.close()
+
+        C_ns = []
+        for i in range(np.shape(Ns)[0]):
+            Sigma = np.cov(Ns[i])
+            Sigma_inv = np.linalg.inv(Sigma)
+            C_n = getCFromSigma_inv(Sigma_inv)
+            C_ns.append(C_n)
+        C_ns = np.asarray(C_ns)      
+        
+        # STEP FIVE:
+        # Calculate the standard effect size by rescaling the mean and SD of the null distributions
+        SES = np.zeros(shape=(nSpecies,nSpecies))
+        for i in range(nSpecies):
+            for j in range(nSpecies):
+                SES[i,j] = (C_O[i,j] - np.mean(C_ns[:,i,j])) / np.std(C_ns[:,i,j])
+        
+        plt.figure(figsize=(12,12))
+        lim = np.ceil(max(np.abs(np.nanmin(SES)),np.nanmax(SES)))
+        plt.imshow(SES,cmap='RdBu_r',vmin=-lim,vmax=lim)
+        plt.colorbar()
+        plt.xticks(ticks=np.arange(0,nSpecies),labels=clusterNames_MH,rotation=90)
+        plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames_MH)
+        plt.savefig(ds.pathToWriteOutput + ds.name + '_StandardEffectSize.png',bbox_inches='tight')
+        plt.close()
+
+        # STEP SIX: 
+        # Calculate a 2-tailed p-value for each pair of species
+        p = np.zeros(shape=(nSpecies,nSpecies))
+        for i in range(nSpecies):
+            for j in range(nSpecies):
+                p[i,j] = sum(np.abs(C_O[i,j]) < np.abs(C_ns[:,i,j]))/np.shape(C_ns)[0]
+        
+        # Now do Benjamini-Hochberg correction
+        
+        alpha = 0.05
+        
+        rejected, p_star = fdrcorrection(p.reshape((1,-1))[0], alpha, method='indep')
+        
+        rejected = rejected.reshape(nSpecies,nSpecies)
+        p_star = p_star.reshape(nSpecies,nSpecies)
+        
+        A = np.zeros(shape=(nSpecies,nSpecies))
+        for i in range(nSpecies):
+            for j in range(nSpecies):
+                if p_star[i,j] < alpha:
+                    A[i,j] = SES[i,j]
+                else:
+                    A[i,j] = np.nan
+                    
+        plt.figure(figsize=(12,12))
+        plt.imshow(A,cmap='RdBu_r',vmin=-15,vmax=15)
+        plt.xticks(ticks=np.arange(0,nSpecies),labels=clusterNames_MH,rotation=90)
+        plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames_MH)
+        plt.colorbar()
+        plt.savefig(ds.pathToWriteOutput + ds.name + '_AdjacencyMatrix.png',bbox_inches='tight')
+        
+        plt.close('all')
+        
+        saveFile = ds.pathToWriteOutput + ds.name + '_MoruetaHolme_data.p'
+        toSave = {'PickleFileGeneratedBy':'spatialstats.py',
+                  'A':A,
+                  'C_O':C_O,
+                  'C_ns':C_ns,
+                  'counts':counts,
+                  'clusterNames_MH':clusterNames_MH,
+                  'Ns':Ns,
+                  'nSpecies':nSpecies,
+                  #'nx':nx,
+                  #'ny':ny,
+                  'O':O,
+                  #'outfolder':outfolder,
+                  'p':p,
+                  'p_star':p_star,
+                  #'pathToData':pathToData,
+                  #'quadratEdgeLength':quadratEdgeLength,
+                  #'r':r,
+                  'rejected':rejected,
+                  'ds.name':ds.name,
+                  'Sigma_O':Sigma_O,
+                  'Sigma_O_inv':Sigma_O_inv,
+                  #'x':x,
+                  #'y':y,
+                  #'xlim':xlim,
+                  #'ylim':ylim,
+                  'ds':ds, 
+                  'df_annotations':df_annotations, 
+                  'colors':colors, 
+                  'clusterNames':clusterNames}
+                
+        with open(saveFile,"wb") as fid:
+            pickle.dump(toSave,fid)
+
+
+        print("Quadrat neighbourhood analysis (Morueta-Holme) completed.")
 
 def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
         #PART 9 - Cell-cell methods
@@ -276,10 +486,11 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
         for i, cluster in enumerate(df_annotations.ClusterNumber):
                 print('Cluster',cluster)
 
-                p0 = ds.points[ds.df[clusteringToUse] == int(cluster)]
-                p0_areas = getAnnulusAreasAroundPoints(p0, dr_mum, maxR_mum, ds.domainX, ds.domainY)
-                allPoints[cluster] = p0
-                areas[cluster] = p0_areas
+                p0 = ds.points[ds.df[clusteringToUse] == cluster]
+                if np.shape(p0)[0]>0:
+                    p0_areas = getAnnulusAreasAroundPoints(p0, dr_mum, maxR_mum, ds.domainX, ds.domainY)
+                    allPoints[cluster] = p0
+                    areas[cluster] = p0_areas
       
         # Now we use that to find the PCFs
         gs = np.zeros(shape=(len(df_annotations.ClusterNumber), len(df_annotations.ClusterNumber), len(np.arange(0,maxR_mum,dr_mum))))
@@ -288,22 +499,22 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                         pair = [clusterA, clusterB]
                         print(pair)
                         
-                        p_A = allPoints[clusterA]# ds.points[ds.df[clusteringToUse] == int(pair[0])]    
-                        p_B = allPoints[clusterB]#ds.points[ds.df[clusteringToUse] == int(pair[1])]
-                                
-                        density_B = np.shape(p_B)[0]/(ds.domainX*ds.domainY)
-                        
-                        areas_A = areas[clusterA]
-                        areas_B = areas[clusterB]
-                        
-                        distances_AtoB = cdist(p_A, p_B, metric='euclidean')
-                        radii, g, contributions = crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum)
-                        gs[a, b, :] = g.transpose()[0]
-                
-                        plt.figure(figsize=(12,9))
-                        plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
-                        plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
-                        plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
+                        p_A = ds.points[ds.df[clusteringToUse] == clusterA]#allPoints[clusterA]# ds.points[ds.df[clusteringToUse] == int(pair[0])]    
+                        p_B = ds.points[ds.df[clusteringToUse] == clusterB]#allPoints[clusterB]#ds.points[ds.df[clusteringToUse] == int(pair[1])]
+                        if np.shape(p_A)[0]>0 and np.shape(p_B)[0]>0:
+                            density_B = np.shape(p_B)[0]/(ds.domainX*ds.domainY)
+                            
+                            areas_A = areas[clusterA]
+                            areas_B = areas[clusterB]
+                            
+                            distances_AtoB = cdist(p_A, p_B, metric='euclidean')
+                            radii, g, contributions = crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum)
+                            gs[a, b, :] = g.transpose()[0]
+                    
+                            plt.figure(figsize=(12,9))
+                            plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
+                            plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
+                            plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
                 
         print("Pair correlation function completed.")   
         # OLD VERSION - to be deleted when tested
