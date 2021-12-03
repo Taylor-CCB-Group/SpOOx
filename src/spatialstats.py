@@ -86,7 +86,15 @@ def main():
         for ds in datasets:
             ds.pathToWriteOutput = pathToWriteOutput+"/"
             #clusteringToUse = 'phenoGraph_cluster' ###ADD to cmd line?
-            colors = [plt.cm.tab20(v) for v in range(len(df_annotations.ClusterNumber))]
+            if len(df_annotations.ClusterNumber) < 21:
+                colors = [plt.cm.tab20(v) for v in range(len(df_annotations.ClusterNumber))]
+            else:
+                # We have more than 20 colors, so this is going to be annoying. Generate a new colormap
+                nNeeded = len(df_annotations.ClusterNumber) - 20
+                colors = [plt.cm.tab20(v) for v in range(20)]
+                newColors = [plt.cm.Set3(v) for v in range(nNeeded)]
+                colors.extend(newColors)
+            
             clusterNames = {df_annotations.ClusterNumber.iloc[v] : df_annotations.Annotation.iloc[v].strip() for v in range(len(df_annotations))}
     
             #make an output directory
@@ -553,7 +561,7 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
         for radius in [1,2]:
                 fig = plt.figure(figsize=(11, 9))
                 labs = clusterNames.values()
-                g = sns.heatmap(gs[:, :, radius], cmap='RdBu_r', vmin=0, vmax=2, annot=True, xticklabels=labs, yticklabels=labs, cbar_kws={'label': '$g(r=' + str(radii[radius]) + '\mu m)$'})
+                g = sns.heatmap(gs[:, :, radius], cmap='RdBu_r', vmin=0, vmax=2, annot=False, xticklabels=labs, yticklabels=labs, cbar_kws={'label': '$g(r=' + str(radii[radius]) + '\mu m)$'})
                 # plt.title(indications[i] + ' - ' + str(radii[radius]) + '$\mu$m')
                 plt.title(ds.name + ' - ' + str(radii[radius]) + '$\mu$m')
                 # fig.autofmt_xdate()
