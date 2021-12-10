@@ -333,8 +333,8 @@ def changeSomeElements(matrix):
     
     # Select elements of a submatrix (a b; c d) such that elements in the same row/column are from the same row/column in matrix
     n, m = np.shape(matrix)
-    rows = random.sample(list(np.arange(0,n)),2)
-    cols = random.sample(list(np.arange(0,m)),2)
+    rows = np.random.choice(range(n), 2, replace=False)
+    cols = np.random.choice(range(m), 2, replace=False)
     a = matrix[rows[0],cols[0]]
     b = matrix[rows[0],cols[1]]
     c = matrix[rows[1],cols[0]]
