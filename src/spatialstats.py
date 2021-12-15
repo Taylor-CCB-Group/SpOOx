@@ -12,12 +12,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from utils_alt import dataset,dataset_filterSampleID, crossPCF, getAnnulusAreasAroundPoints, plotPCFWithBootstrappedConfidenceInterval, changeSomeElements
-import matplotlib.path as mpltPath
 import skimage
 from pathlib import Path
 from scipy.spatial.distance import cdist
 import pickle
 from statsmodels.stats.multitest import fdrcorrection
+import skimage.io
 
 sns.set_style('white')
 sns.set(font_scale=2)
@@ -74,16 +74,21 @@ def main():
         # pathToWriteOutput = '/Filers/home/j/jbull/Temp'#args.output#'/Filers/home/j/jbull/Temp1/'#
         # cluster_annotations = '/stopgap/hyperion/lho/tmp/annotations.tab'#args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
         # clusteringToUse = 'harmony_phenograph_exprs'#args.clusteringToUse
+        # pathToLabelMatrix = '/stopgap/hyperion/lho/tmp/c2/deepcell/COVIDPANEL2_SAMPLE_10_ROI_2.tif'
+        
+        
+        # labels = skimage.io.imread(pathToLabelMatrix)        
+        
         functions = args.functions
      
         if bool(functions) == False:
                 print("Running all functions:")
-                functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','networkdiagram','morueta-holme']
-
+                functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','morueta-holme','networkstatistics']
+        
         df_annotations, datasets = preprocessing(pathToData, cluster_annotations)
         #todo should not need to add a / 
         
-        for ds in datasets:
+        for ds in datasets[0:1]:
             ds.pathToWriteOutput = pathToWriteOutput+"/"
             #clusteringToUse = 'phenoGraph_cluster' ###ADD to cmd line?
             if len(df_annotations.ClusterNumber) < 21:
@@ -119,6 +124,8 @@ def main():
                             moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, counts)
                     if i == 'paircorrelationfunction':
                             pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames)
+                    if i == 'networkstatistics':
+                            networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors)
 
 
 
@@ -234,26 +241,19 @@ def quadratMethods(ds, df_annotations, clusteringToUse):
                 VMR = variance / mean
                 VMRs.append(VMR)            
             
-        # VMRs = []
-        # means = []
-        # variances = []
-        # for ind, cl in enumerate(df_annotations.ClusterNumber):
-        #         p = ds.points[ds.df[clusteringToUse] == int(cl)]
-        #         totals[ind] = len(p)
-        #         for i in range(nQuadrats):
-        #                 path = mpltPath.Path(quadrats[i])
-        #                 inside2 = path.contains_points(p)
-        #                 count = sum(inside2)
-        #                 counts[i,ind] = count
-
-        #         mean = np.nanmean(counts[:,ind])
-        #         variance = np.nanstd(counts[:,ind])**2
-        #         VMR = variance / mean
-        #         VMRs.append(VMR)
-        #         means.append(mean)
-        #         variances.append(variance)
-
         r = np.corrcoef(counts.transpose())
+        
+        saveFile = ds.pathToWriteOutput + ds.name + '_quadratCounts_data.p'
+        toSave = {'PickleFileGeneratedBy':'spatialstats.py',
+                  'quadratEdgeLength':quadratEdgeLength,
+                  'counts':counts,
+                  'r':r,
+                  'VMRs':VMRs
+                  }
+                
+        with open(saveFile,"wb") as fid:
+            pickle.dump(toSave,fid)
+
 
         print("Quadrat methods completed.")
 
@@ -277,6 +277,7 @@ def quadratCounts(ds, df_annotations, colors, clusterNames, r, VMRs):
         plt.gca().set_yticklabels(clusterNames.values())
         plt.plot([1,1],[np.sort(list(clusterNames.keys()))[0],np.sort(list(clusterNames.keys()))[-1]],'k:')
         plt.savefig(ds.pathToWriteOutput + ds.name + '__VarianceToMeanRatio.png',bbox_inches='tight')
+        
         print("Quadrat counts completed.")
 
 
@@ -303,11 +304,6 @@ def quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts):
                 plt.title(clusterNames[cl])
 
                 plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[cl] + ' (cluster ' + str(cl) + ')' + '_HistogramOfQuadratCounts.png',bbox_inches='tight')
-
-        #     f_obs = out[0]
-        #     #print(out[1])
-        #     chi_sq, p = ss.chisquare(f_obs, f_exp[0:-1])
-        #     print(chi_sq, p)
 
         print("Quadrat cell distributions completed.")
         
@@ -525,36 +521,7 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                             plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
                 
         print("Pair correlation function completed.")   
-        # OLD VERSION - to be deleted when tested
-                # # lengths = []
-                # for a, clusterA in enumerate(df_annotations.ClusterNumber):
-                #         for b, clusterB in enumerate(df_annotations.ClusterNumber):
-                #                 plt.figure(figsize=(12, 9))
-                #                 print(a,b)
-
-                #                 pair = [clusterA, clusterB]
-                #                 p0 = ds.points[ds.df[clusteringToUse] == int(pair[0])]
-                #                 p1 = ds.points[ds.df[clusteringToUse] == int(pair[1])]
-                #         #         lengths.append(len(p0))
-                #                 g, radii, contributions = EfficientPCF_AtoB(p0, p1, ds.domainX, ds.domainY, dr_mum, maxR_mum)
-                #                 gs[a, b, :] = g
-                #                 N0 = len(p0)
-                #                 N1 = len(p1)
-                #         #         bootstrapSamples = CalculateBootstrapAroundCSRForPValues(N0, N1, ds.domainX, ds.domainY, dr, maxR, numBootstrapSamples=100)
-                #                 # plt.figure(figsize=(12,9))
-                #                 # plotPCF(plt.gca(), radii, g, label=indication)
-                #                 plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p0, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
-                #                 plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
-                        # #       assert(1==2)
-                        # #       plt.show()
-                        #         plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
-                        # #        plt.close()
-                # plt.legend()
-                # plt.close()
-                # plt.show()
-                # plt.close('all')
-                # print("Pair correlation function completed.")
-
+    
 
         #PART 10 - Make a heatmap
         #plt.imshow(gs[:,:,1],cmap='RdBu_r',vmin=0,vmax=2)
@@ -568,7 +535,106 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                 plt.savefig(ds.pathToWriteOutput + ds.name + '_PCF-Heatmap' + str(radii[radius]) + '-micrometers.png',bbox_inches='tight')
                 # Make graph image
                 # Save everything
-        print("Heatmap completed.")
+                plt.close()
+           
+        saveFile = ds.pathToWriteOutput + ds.name + '_PCF_data.p'
+        toSave = {'PickleFileGeneratedBy':'spatialstats.py',
+                  'maxR_mum':maxR_mum,
+                  'dr_mum':dr_mum,
+                  'gs':gs,
+                  'radii':radii}
+                
+        with open(saveFile,"wb") as fid:
+            pickle.dump(toSave,fid)
+        print("PCF heatmap completed.")
 
+
+def networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors):
+        
+        label2CellType = {}
+        annotationDict = {df_annotations.iloc[v]['ClusterNumber']:df_annotations.iloc[v]['Annotation'] for v in range(len(df_annotations))}
+        for i in range(len(ds.df)):
+            label = ds.df.iloc[i].label
+            cellType = ds.df.iloc[i][clusteringToUse] 
+            label2CellType[label] = cellType
+            
+        import scipy.ndimage as ndimage
+        # Dilate the label matrix https://stackoverflow.com/questions/12747319/scipy-label-dilation
+        dilationValue = 5
+        dilation = ndimage.maximum_filter(labels,dilationValue)
+        dilation[labels != 0] = labels[labels != 0]
+
+        # Get adjaceny matrix https://stackoverflow.com/questions/26486898/matrix-of-labels-to-adjacency-matrix
+        G = np.zeros([dilation.max() + 1]*2)
+        
+        # left-right pairs
+        G[dilation[:, :-1], dilation[:, 1:]] = 1
+        # right-left pairs
+        G[dilation[:, 1:], dilation[:, :-1]] = 1
+        # top-bottom pairs
+        G[dilation[:-1, :], dilation[1:, :]] = 1
+        # bottom-top pairs
+        G[dilation[1:, :], dilation[:-1, :]] = 1
+        
+        nx, ny = np.shape(G)
+        
+        assert(np.max(labels) == np.max(ds.df.label))
+        assert(len(G) == np.max(ds.df.label)+1)
+        
+        # Quantify numbers of connections between different labels
+        
+        celltypes = np.asarray(ds.df[clusteringToUse])
+        outputs = {}
+        for ct_i, celltype in enumerate(annotationDict):
+            posInds = np.where(ds.df[clusteringToUse] == celltype)[0]
+            print(ct_i, celltype)
+            print(len(posInds))
+            if len(posInds) > 0:
+                
+                # G is indexed by label value, not by dataframe index
+                posLabels = ds.df.label.iloc[posInds]
+            
+                degree = []
+                neighbourTypes = []
+                for i in posLabels:
+                    neighbours = np.where(G[i,:])[0]
+                    if neighbours[0] == 0:
+                        neighbours = np.delete(neighbours,0)
+                    degree.append(len(neighbours))
+                    neighbourTypes.extend([label2CellType[v] for v in neighbours])
+                
+                # OK, now we need to convert cluster labels into integers so that we can visualise
+                # No, I don't know why they're strings either
+                # Use the ordering of annotationDict to provide the integers
+                celltype2Int = {list(annotationDict.keys())[v] : v for v in range(len(annotationDict))}
+                neighbourTypesAsInts = [celltype2Int[v] for v in neighbourTypes]
+                
+                hist,bins = np.histogram(neighbourTypesAsInts,bins=np.arange(0,len(annotationDict)+1))
+                fig, ax = plt.subplots(nrows=1,ncols=2,figsize=(15,6))
+                ax[1].pie(hist/len(neighbourTypesAsInts),labeldistance=1.15,colors=colors)
+                my_circle=plt.Circle( (0,0), 0.6, color='white')
+                ax[1].add_artist(my_circle)
+                my_circle=plt.Circle( (0,0), 0.55, color=colors[ct_i])
+                ax[1].add_artist(my_circle)
+                ax[1].set_title('n = ' + str(len(posInds)))
+                
+                ax[0].hist(degree,bins=np.arange(0,19),color=colors[ct_i])
+                ax[0].set_title(annotationDict[celltype] + ', mean degree: ' + str(np.round(np.mean(degree),2)))
+    
+                plt.savefig(ds.pathToWriteOutput + ds.name + annotationDict[celltype] + '_adjacentCells.png',bbox_inches='tight')
+                    
+                plt.close()
+                outputs[celltype] = {'degree':degree,
+                                     'hist':hist,
+                                     'neighbourTypesAsInts':neighbourTypesAsInts}
+                
+        saveFile = ds.pathToWriteOutput + ds.name + '_networkAnalysis_data.p'
+        toSave = {'PickleFileGeneratedBy':'spatialstats.py',
+                  'dilationValue':dilationValue,
+                  'outputs':outputs}
+                
+        with open(saveFile,"wb") as fid:
+            pickle.dump(toSave,fid)
+        print('network statistics completed')
 
 main()
