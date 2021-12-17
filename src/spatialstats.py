@@ -74,10 +74,7 @@ def main():
         # pathToWriteOutput = '/Filers/home/j/jbull/Temp'#args.output#'/Filers/home/j/jbull/Temp1/'#
         # cluster_annotations = '/stopgap/hyperion/lho/tmp/annotations.tab'#args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
         # clusteringToUse = 'harmony_phenograph_exprs'#args.clusteringToUse
-        # pathToLabelMatrix = '/stopgap/hyperion/lho/tmp/c2/deepcell/COVIDPANEL2_SAMPLE_10_ROI_2.tif'
-        
-        
-        # labels = skimage.io.imread(pathToLabelMatrix)        
+         
         
         functions = args.functions
      
@@ -88,7 +85,7 @@ def main():
         df_annotations, datasets = preprocessing(pathToData, cluster_annotations)
         #todo should not need to add a / 
         
-        for ds in datasets[0:1]:
+        for ds in datasets:
             ds.pathToWriteOutput = pathToWriteOutput+"/"
             #clusteringToUse = 'phenoGraph_cluster' ###ADD to cmd line?
             if len(df_annotations.ClusterNumber) < 21:
@@ -125,6 +122,9 @@ def main():
                     if i == 'paircorrelationfunction':
                             pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames)
                     if i == 'networkstatistics':
+                            # Infer path to label matrix from file structure - this is easily breakable (and hopefully easily fixable too)
+                            pathToLabelMatrix = '/project/covidhyperion/shared/data/panel2/tree/'+ ds.df.condition + '/'+ds.df.sample_id+'/'+ds.df.ROI+'/deepcell/COVIDPANEL2_'+ds.df.sample_id+'_'+ds.df.ROI+'.tif'
+                            labels = skimage.io.imread(pathToLabelMatrix)
                             networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors)
 
 
