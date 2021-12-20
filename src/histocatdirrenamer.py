@@ -18,11 +18,13 @@ Output All subfolders renamed
 
 parser.add_argument('--indir', dest='indir',
                     help='histocat folder')
-parser.add_argument('--pattern', dest='pattern',
+parser.add_argument('--pattern', dest='pattern', default='',
                     help='histocat folder')
-parser.add_argument('--disease_sample', dest='disease_sample',
+parser.add_argument('--disease_sample', dest='disease_sample',default='',
                     help='stub for the disease_sample renaming e.g. covid_sample_1')
-		    
+parser.add_argument('--roi', dest='roi', action='store_true', default=False,
+                    help='only rename the roi of in the filename')
+
 if len(sys.argv)==1:
     parser.print_help(sys.stderr)
     sys.exit(1)		   
@@ -32,12 +34,16 @@ args = parser.parse_args()
 def RenameDirs(rootdir):
     for it in os.scandir(rootdir):
         # check if the directory or symlink (for nextflow) exists and contains the pattern specified
-        if (it.is_dir() or it.is_symlink()) and args.pattern in it.name:
+        if (it.is_dir() or it.is_symlink()) and (args.pattern in it.name) or (args.roi == True):
             x =  re.search(r"_s0_a(\d+)_ac$", it.path)
             roi = x.group(1)
             print("ROI = "+ roi)
+            print("it.path = "+ it.path)
             fullPath = os.path.abspath(it.path)
             basePath = os.path.abspath(it.path + "/..")
+            if (args.roi == True):
+                x = re.search(r"(\w+_SAMPLE_\d+)", it.path)
+                args.disease_sample = x.group(1)
             newPath = basePath + "/" + args.disease_sample + "_ROI_"+roi
             print("Renaming " + fullPath + " to " + newPath)
             #os.rename(fullPath, newPath)
