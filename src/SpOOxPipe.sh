@@ -103,7 +103,7 @@ function ZegamiROIStacked() {
 	find $treeDir -name "deepcell" -exec $test $scriptsDir/"deepercellcopyimages.py" --zegamidir $zegamiStackDir --indir {} \; 
 	$test $scriptsDir/flat2stacks.py -i $zegamiDir/img/ -o $zegamiStackDir -y $zegamiStackDir/"zegami.yaml" -n $projectName -d $projectName -m $markerFile -t $zegamiStackDir/"zegami.tsv"
 	zeg create collections --project XY6PsWre --config $zegamiStackDir/zegami.yaml
-}
+}	
 
 
 
@@ -163,7 +163,7 @@ function SpatialStatistics() {
 #MakeConfig
 #MakeResultsTree
 #DeepCell
-#ZegamiROIStacked
+ZegamiROIStacked
 #SignalExtraction
 #MergeSignalExtractionAtDifferentScales
 #ZegamiUploadCellImages
