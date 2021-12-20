@@ -12,6 +12,9 @@ def GetMarkerList(configFile, selectedColumn):
 ################################################
     markerColumn = "marker_name"
     df = pd.read_csv(configFile, sep="\t")
+    if selectedColumn == "all":
+         return df[markerColumn].tolist()
+         
     if (selectedColumn in df):
         filtered = (df[df[selectedColumn] == 1.0])
         markers = filtered[markerColumn].values.tolist()
