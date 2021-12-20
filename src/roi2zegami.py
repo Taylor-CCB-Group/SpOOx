@@ -2,23 +2,116 @@
 # coding: utf-8
 
 import cv2
+import numpy as np
 from os import listdir
 from os.path import isfile, join
+from skimage.exposure import rescale_intensity
 import os
 import argparse
 import re
 import sys
+from PIL import Image
 
-src_image = '/t1-data/user/staylor/lho/hyperion/data/cun1/ImcSegmentationPipeline/Data/output/histocat/CUN6USS3COVIDHyperion2runA_s0_p4_r1_a1_ac/ACE2_Ho165.tiff'
-dest_image = '/t1-data/user/staylor/lho/hyperion/data/cun1/tmp/test.png'
 
-def tiff2png(src_image,dest_image):
+
+def tiff2pngMorph(src_image,dest_image):
+    img = Image.open(src_image)
+    # Get low/high values to rescale based on
+    p2, p98 = np.percentile(img, (0.02, 99.8))
+    # convert PIL image to numpy array
+    image_np = np.array(img)
+    # rescale values
+    image_np = rescale_intensity(image_np, in_range=(p2, p98))
+    # convert back to PIL image
+    normalised = Image.fromarray(image_np)
+    normalised = normalised.convert('L')
+    normalised.save(dest_image)
+
+
+def convertScale(img, alpha, beta):
+    """Add bias and gain to an image with saturation arithmetics. Unlike
+    cv2.convertScaleAbs, it does not take an absolute value, which would lead to
+    nonsensical results (e.g., a pixel at 44 with alpha = 3 and beta = -210
+    becomes 78 with OpenCV, when in fact it should become 0).
+    """
+
+    new_img = img * alpha + beta
+    new_img[new_img < 0] = 0
+    new_img[new_img > 255] = 255
+    return new_img.astype(np.uint8)
+
+# Automatic brightness and contrast optimization with optional histogram clipping
+def automatic_brightness_and_contrast(image, clip_hist_percent=1):
+    #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+    #gray = image
+    print(gray)
+    gray = gray.astype(int)
+    print(gray)
+    
+    # Calculate grayscale histogram
+    hist = cv2.calcHist([gray],[0],None,[256],[0,256])
+    hist_size = len(hist)
+    print(hist_size)
+
+
+    # Calculate cumulative distribution from the histogram
+    accumulator = []
+    accumulator.append(float(hist[0]))
+    for index in range(1, hist_size):
+        accumulator.append(accumulator[index -1] + float(hist[index]))
+    
+    # Locate points to clip
+    maximum = accumulator[-1]
+    clip_hist_percent *= (maximum/100.0)
+    clip_hist_percent /= 2.0
+    
+    # Locate left cut
+    minimum_gray = 0
+    while accumulator[minimum_gray] < clip_hist_percent:
+        minimum_gray += 1
+    
+    # Locate right cut
+    maximum_gray = hist_size -1
+    while accumulator[maximum_gray] >= (maximum - clip_hist_percent):
+        maximum_gray -= 1
+    
+    # Calculate alpha and beta values
+    alpha = 255 / (maximum_gray - minimum_gray)
+    beta = -minimum_gray * alpha
+    
+    '''
+    # Calculate new histogram with desired range and show histogram 
+    new_hist = cv2.calcHist([gray],[0],None,[256],[minimum_gray,maximum_gray])
+    plt.plot(hist)
+    plt.plot(new_hist)
+    plt.xlim([0,256])
+    plt.show()
+    '''
+
+    auto_result = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+    return (auto_result, alpha, beta)
+
+def tiff2png(src_image,dest_image,contrast=100,brightness=0):
     img = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
-    normed = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-    contrast = 10
-    brightness = 0
+    print("Converting " + src_image + " to " + dest_image)
+    normed = cv2.normalize(img, img, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
     out = cv2.addWeighted(normed, contrast, normed, 0, brightness)
     cv2.imwrite(dest_image,out)
+
+tmp = "/tmp/normalised.png"
+src_image = '/project/covidhyperion/shared/data/panel2/histocat/COVID_SAMPLE_11_ROI_2/DNA1_Ir191.tiff'
+image_normalised = '/project/covidhyperion/shared/data/panel2/zegamistacks/aSMA/COVID_SAMPLE_11_ROI_2.png'
+dest_image = '/t1-data/project/covidhyperion/shared/data/tmp/DNA1.png'
+
+
+#### FOR TESTING ####
+#tiff2png(src_image,tmp)
+#tiff2png(tmp,dest_image)
+#tiff2png(src_image,dest_image,contrast=100)
+#auto_result, alpha, beta = automatic_brightness_and_contrast(src_image)
+#quit()
+
 
 
 def roi2images(src_dir,dest_dir,zegami_tsv):
