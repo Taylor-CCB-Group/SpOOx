@@ -50,13 +50,16 @@ def main():
     #Read in celldata table and process marker input.
     # marker input is a list so take first element for path and then next is the name of the column
     #todo test for if its a file
+    # first param is the name of the marker panel and second is column from that file
     marker_list = readconfig.GetMarkerList(marker_input[0], marker_input[1])
 
     #ST ignore the metal ending 
-    #todo convert the source names to ones without the marker
+    #todo convert the source names to ones without the metal ending
     marker_list = [re.sub(r'_\w+', '', marker) for marker in marker_list]
-
+    print("Marker", marker_list)
     data_X , marker_types = process_marker_input(ds.df, marker_list)
+    #print("Datax_60",data_X)
+    #quit()
     print("Analysing the following markers :", marker_types)
     data_X = pd.DataFrame(ds.df[marker_types].values)
     data_X.columns = marker_types
@@ -97,8 +100,14 @@ def main():
     columns_to_add = pd.DataFrame(adata.obsm["X_"+analysis_type])
     columns_to_add.columns = ["x_"+analysis_type, "y_"+analysis_type, "z_"+analysis_type]
     phenoGraph_cluster = pd.DataFrame(adata.obs['phenoGraph_cluster'])
-    columns_to_add['phenoGraph_cluster'] = phenoGraph_cluster.values
-    zt_out = pd.merge(ds.df, columns_to_add, on = adata.obs[0], how = 'outer')
+    clusterIds=phenoGraph_cluster.values
+    # convert the cluster number to a string
+    newClusterIds = ["cl"+(str(clusterId).replace('[','')).replace(']','') for clusterId in clusterIds]
+    columns_to_add['phenoGraph_cluster'] = newClusterIds
+    #zt_out = pd.merge(ds.df, columns_to_add, on = adata.obs[0], how = 'outer')
+    #st added to get rid of key_0 which keeps getting added to the output
+    zt_out = pd.merge(ds.df, columns_to_add, left_index=True, right_index=True, how = 'outer')
+
     #zt_out.to_csv(ds.pathToWriteOutput+ds.name+"_phenograph_output.tab", na_rep = "NaN", index = False, sep ='\t')
     zt_out.to_csv(ds.pathToWriteOutput+mainOutputName, na_rep = "NaN", index = False, sep ='\t')
     #logging.info('Coordinates and phenograph clusters saved to: %s', ds.pathToWriteOutput+ds.name+"_phenograph_output.tab")
@@ -115,7 +124,7 @@ def main():
 
 
 def process_marker_input(table, marker_input):
-    #print(">>>>>>>>>>>>>>>>>",table,">>>>>>>>>>>>",marker_input)
+    print(">>>>>>>>>>>>>>>>>",table,">>>>>>>>>>>>",marker_input)
     #Takes input table and marker_input path, outputs (a) numpy.ndarray of marker values, (b) list of markers.
     marker_types = []
     marker_input_string = ''.join(marker_input)
@@ -143,7 +152,9 @@ def process_marker_input(table, marker_input):
         logging.warning("Invalid marker input file (incompatible formatting /or/ no valid column heading in file)")
     #Marker types is a list of the markers that should be used in clustering.
     data_X = pd.DataFrame(table[marker_types].values)
+    print("dataX_151",data_X)
     data_X.columns = marker_types
+
     #ST worth a try
     pd.DataFrame(data_X.fillna(0))
     return data_X , marker_types
