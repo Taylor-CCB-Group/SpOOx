@@ -100,14 +100,21 @@ image_sources:\n""").format(args.name,args.description,args.zegami_tsv)
 y.write(a)
 
 #markers= File2List(args.markers)
-markers = readconfig.GetMarkerList(args.markers,"clustering")
-print("MARKERS",markers)
-#add deepcell to the list of markers
+
+markers=[]
+#clustering = readconfig.GetMarkerList(args.markers,"clustering")
+#nucleus = readconfig.GetMarkerList(args.markers,"nucleus")
+#markers = clustering +  nucleus
+markers = readconfig.GetMarkerList(args.markers,"all")
+
+#add deepcell and the false colour merged images to the list of markers
 # todo check exists!
 markers.append("deepcell_mask")
+#markers.append("merged")
+print("MARKERS",markers)
+
 
 # goes though all the markers and identifies the name in zegami 'flat' image directory
-
 rois = set()
 
 for marker_name in markers:
