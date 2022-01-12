@@ -42,10 +42,10 @@ def File2List(file):
 
 
 
-def TiffNorm(src_image,dest_image):
+def TiffNorm(src_image,dest_image,contrast=20):
     img = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
     normed = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-    contrast = 20
+    print("contrast=",contrast)
     brightness = 0
     out = cv2.addWeighted(normed, contrast, normed, 0, brightness)
     cv2.imwrite(dest_image,out)
@@ -130,6 +130,7 @@ imageCytFlatNormPNG = os.path.join(args.imageOutDir,'cyto_flat_norm.png')
 imageOut = os.path.join(args.imageOutDir,"deepcell.tif")
 mergedImage = os.path.join(args.imageOutDir,"mergenucandcyt.png")
 bwImageOut = os.path.join(args.imageOutDir,"bandwmask.png")
+contrast = args.contrast
 
 
 print("*** Analysing",args.dirName," ***")
@@ -169,8 +170,8 @@ print("Converting ",imageCyt," to flattened ",imageCytFlat," using ",im2Flattene
 
 
 #enhance contrast on image
-TiffNorm(imageNucFlat, imageNucFlatNorm)
-TiffNorm(imageCytFlat, imageCytFlatNorm)
+TiffNorm(imageNucFlat, imageNucFlatNorm, contrast)
+TiffNorm(imageCytFlat, imageCytFlatNorm, contrast)
 
 imNuc = imread(imageNucFlatNorm)
 imCyt = imread(imageCytFlatNorm)
