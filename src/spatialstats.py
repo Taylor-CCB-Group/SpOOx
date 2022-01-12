@@ -123,7 +123,14 @@ def main():
                             pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames)
                     if i == 'networkstatistics':
                             # Infer path to label matrix from file structure - this is easily breakable (and hopefully easily fixable too)
-                            pathToLabelMatrix = '/project/covidhyperion/shared/data/panel2/tree/'+ ds.df.condition + '/'+ds.df.sample_id+'/'+ds.df.ROI+'/deepcell/COVIDPANEL2_'+ds.df.sample_id+'_'+ds.df.ROI+'.tif'
+                            #pathToLabelMatrix = '/project/covidhyperion/shared/data/panel2/tree/'+ ds.df.condition + '/'+ds.df.sample_id+'/'+ds.df.ROI+'/deepcell/COVIDPANEL2_'+ds.df.sample_id+'_'+ds.df.ROI+'.tif'
+                            sub_path = str(ds.df.sample_id)
+                            sub_path = sub_path.split()[1]
+                            print("split path: ", sub_path)
+                            sub_path = sub_path.replace('_SAMPLE', '/SAMPLE')
+                            sub_path = sub_path.replace('_ROI', '/ROI')
+                            print("sub_path" + sub_path)
+                            pathToLabelMatrix = '/project/covidhyperion/shared/data/panel2/tree/' + sub_path + '/deepcell/deepcell.tif'
                             labels = skimage.io.imread(pathToLabelMatrix)
                             networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors)
 
