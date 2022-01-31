@@ -585,8 +585,9 @@ def networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels,
         
         nx, ny = np.shape(G)
         
-        assert(np.max(labels) == np.max(ds.df.label))
-        assert(len(G) == np.max(ds.df.label)+1)
+        # Remove these asserts as they only hold when no labels have been removed in filtering steps earlier
+        #assert(np.max(labels) == np.max(ds.df.label))
+        #assert(len(G) == np.max(ds.df.label)+1)
         
         # Quantify numbers of connections between different labels
         
@@ -607,8 +608,13 @@ def networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels,
                     neighbours = np.where(G[i,:])[0]
                     if neighbours[0] == 0:
                         neighbours = np.delete(neighbours,0)
-                    degree.append(len(neighbours))
-                    neighbourTypes.extend([label2CellType[v] for v in neighbours])
+                    unfilteredNeighbours = []
+                    for v in neighbours:
+                        if v in label2CellType:
+                            unfilteredNeighbours.append(v)
+                        
+                    degree.append(len(unfilteredNeighbours))
+                    neighbourTypes.extend([label2CellType[v] for v in unfilteredNeighbours])
                 
                 # OK, now we need to convert cluster labels into integers so that we can visualise
                 # No, I don't know why they're strings either
