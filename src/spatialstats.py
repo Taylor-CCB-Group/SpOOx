@@ -5,8 +5,10 @@ DESC = ("Apply spatial statistics pipeline with command line inputs.")
 
 # Imports
 import os
+import os.path
 import sys
 import argparse
+from matplotlib import path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -65,6 +67,12 @@ def main():
 
 
         args = parser.parse_args()
+
+        if (os.path.exists(args.cluster_annotations) == False):
+                print("Annotation file does not exist.")
+                sys.exit()
+
+
 
         pathToData = args.pathToData#'/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#
         pathToWriteOutput = args.output#'/Filers/home/j/jbull/Temp1/'#
