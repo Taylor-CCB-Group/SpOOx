@@ -78,10 +78,10 @@ def main():
         pathToWriteOutput = args.output#'/Filers/home/j/jbull/Temp1/'#
         cluster_annotations = args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
         clusteringToUse = args.clusteringToUse
-        # pathToData = '/stopgap/hyperion/lho/tmp/COVID_SAMPLE_9_COVID_SAMPLE_10_COVID_SAMPLE_11_COVID_SAMPLE_15_cellData_Harmonyclustered.txt'#args.pathToData#'/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#
-        # pathToWriteOutput = '/Filers/home/j/jbull/Temp'#args.output#'/Filers/home/j/jbull/Temp1/'#
-        # cluster_annotations = '/stopgap/hyperion/lho/tmp/annotations.tab'#args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
-        # clusteringToUse = 'harmony_phenograph_exprs'#args.clusteringToUse
+        # pathToData = '/t1-data/project/covidhyperion/shared/data/panel2/tree/clustering/COVID_HC/COVID_HC_cellData_Harmonyclustered_k30.txt'#'/t1-data/project/covidhyperion/shared/data/panel2/tree/COVID/SAMPLE_14/ROI_2/clustering/COVID_SAMPLE_14_ROI_2_cellData_clustered.txt'
+        # cluster_annotations = '/t1-data/project/covidhyperion/shared/data/panel2/config/clusterannotation.tab'
+        # clusteringToUse = 'harmony_phenograph_exprs'#'phenograph_cluster_scaledtrim_k30'
+        # pathToWriteOutput = '/Filers/home/j/jbull/Temp_2222_2/'
          
         
         functions = args.functions
@@ -327,7 +327,7 @@ def moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, coun
         # Calculate cell association matrix following the method from Morueta-Holme et al 2016 DOI: 10.1111/ecog.01892
         O = counts.transpose()
         clusterNames_MH = list(clusterNames.values())
-        
+       
         # If any species is not represented in this sample, O will be singular and hence non-invertible
         # So we get rid of any cell types that aren't present in the sample
         if len(np.where(np.sum(counts,axis=0) == 0)) > 0:
@@ -356,6 +356,7 @@ def moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, coun
         i = 0
         Ns = []
         print('Shuffling matrix')
+        singularCount = 0
         while i < 1000:
             # Do 500 shuffles in between each N
             if i % 25 == 0:
@@ -365,9 +366,14 @@ def moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, coun
                 matrix, success = changeSomeElements(matrix)
                 if success:
                     j = j + 1
-            out = matrix.copy()
-            Ns.append(out)
-            i = i + 1
+            if np.linalg.det(np.cov(matrix)) != 0:
+                # Only add matrices with non-zero determinant in covariance matrix
+                out = matrix.copy()
+                Ns.append(out)
+                i = i + 1
+            else:
+                singularCount = singularCount + 1
+                print('Found singular covariance matrix, reshuffling (' + str(singularCount) + ' occurrences so far)')
         Ns = np.asarray(Ns)
         
         # OK, we now have 1000 matrices with randomly shuffled values such that the row and column sums are the same!
