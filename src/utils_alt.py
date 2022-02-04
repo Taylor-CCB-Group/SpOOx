@@ -76,27 +76,38 @@ def plotPCFWithBootstrappedConfidenceInterval(ax, radii, g, contributions, point
     xRect = np.linspace(0,xmax,nRectanglesX+1)
     yRect = np.linspace(0,ymax,nRectanglesY+1)
 
+
     # Identify the rectangle that each point belongs to
-    rectangleIDs = np.zeros(shape=(len(contributions)))
+    # rectangleIDs = np.zeros(shape=(len(contributions)))
     rectID = 0
+    rectNs = np.zeros(nRectanglesX*nRectanglesY)
+    rectContributions = np.zeros((nRectanglesX*nRectanglesY,np.shape(contributions)[1]))
     for i in range(nRectanglesX):
-        for j in range(nRectanglesX):
+        for j in range(nRectanglesY):
             accept = (points[:,0] > xRect[i]) & (points[:,0] <= xRect[i+1])
             accept = accept & (points[:,1] > yRect[j]) & (points[:,1] <= yRect[j+1])
-            rectangleIDs[accept] = rectID
+            if sum(accept) > 0:
+                rectContributions[rectID,:] = np.sum(contributions[accept,:],axis=0)
+                rectNs[rectID] = sum(accept)
+            # rectangleIDs[accept] = rectID
             rectID = rectID + 1
+            
 
     # Each bootstrap sample, we select nRectanglesX*nRectanglesY rectangles and construct a PCF from them
     numBootstrapSims = 999
     samplePCFs = np.zeros(shape=(numBootstrapSims, np.shape(contributions)[1]))
-    for i in range(numBootstrapSims):
-        N = 0
-        toSample = np.random.choice(nRectanglesX*nRectanglesY, nRectanglesX*nRectanglesY)
-        for j in toSample:
-            sample = contributions[rectangleIDs == j]
-            samplePCFs[i, :] = samplePCFs[i, :] + sum(sample)
-            N = N + np.shape(sample)[0]
-        samplePCFs[i, :] = samplePCFs[i, :] / N
+    toSample = np.random.choice(nRectanglesX*nRectanglesY, size=(nRectanglesX*nRectanglesY,numBootstrapSims))
+    
+    
+    # First sum down each of the 400 boxes (leaves 999 by 30)
+    # Then sum down the 400 boxes for the Ns (leaving 999x1)
+    # Then divide each entry along the remaining line
+    sample = np.sum(rectContributions[toSample,:],axis=0)
+    Ns = np.sum(rectNs[toSample],axis=0)
+    
+    samplePCFs = sample / Ns[:,np.newaxis]
+    
+
 
     # Get 95% CI
     PCF_min = 2*np.mean(samplePCFs,axis=0) - np.percentile(samplePCFs, 97.5, axis=0)
