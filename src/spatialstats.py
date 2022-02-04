@@ -28,6 +28,7 @@ sns.set(font_scale=2)
 #name of current program
 prog = os.path.basename(__file__)
 description = DESC
+rois=[]
 
 def main():     
         parser = argparse.ArgumentParser(
@@ -51,6 +52,13 @@ def main():
                 '-cl', '--clusteringToUse', 
                 help = 'Name of column in the file specified by pathToData to use as the clustering label. Should correspond with the annotations in cluster_annotations',
                 required = True
+        ) 
+
+        parser.add_argument(
+                '-r', '--rois',
+                nargs = '+',
+                help = 'Name of roi in the file, must be in the sample_id column',
+                required = False
         ) 
         parser.add_argument(
                 '-f', '--functions',
@@ -78,6 +86,8 @@ def main():
         pathToWriteOutput = args.output#'/Filers/home/j/jbull/Temp1/'#
         cluster_annotations = args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
         clusteringToUse = args.clusteringToUse
+        rois = args.rois
+
         # pathToData = '/t1-data/project/covidhyperion/shared/data/panel2/tree/clustering/COVID_HC/COVID_HC_cellData_Harmonyclustered_k30.txt'#'/t1-data/project/covidhyperion/shared/data/panel2/tree/COVID/SAMPLE_14/ROI_2/clustering/COVID_SAMPLE_14_ROI_2_cellData_clustered.txt'
         # cluster_annotations = '/t1-data/project/covidhyperion/shared/data/panel2/config/clusterannotation.tab'
         # clusteringToUse = 'harmony_phenograph_exprs'#'phenograph_cluster_scaledtrim_k30'
@@ -87,10 +97,12 @@ def main():
         functions = args.functions
      
         if bool(functions) == False:
-                print("Running all functions:")
                 functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','morueta-holme','networkstatistics']
+                print("Running all functions:", functions)
         
-        df_annotations, datasets = preprocessing(pathToData, cluster_annotations)
+        print("Checking what samples and rois to analyse...")
+
+        df_annotations, datasets = preprocessing(pathToData, cluster_annotations,rois)
         #todo should not need to add a / 
         
         for ds in datasets:
@@ -144,16 +156,31 @@ def main():
 
 
 
-def preprocessing(pathToData, cluster_annotations):
+def preprocessing(pathToData, cluster_annotations,rois):
         # Filter dataframe to ensure spatial stats are only applied to the same sample   
-        df = pd.read_csv(pathToData,delimiter='\t')
+        df = pd.read_csv(pathToData,delimiter='\t')        
         uniqueSamples = np.unique(df['sample_id'])
-        datasets = []
+        print("Unique samples: ", uniqueSamples)
+
+        # check to see if rois specified in cmd line are specified in the dataframe (sample_id)
+	# if correct then run only those rois
+        if (bool(rois) == True):
+                print("ROIs selected =",rois)
+                check =  all(item in uniqueSamples for item in rois)
+                if (check == True):           
+                        uniqueSamples = rois
+                else:                                           
+                        print("Some ROIs do not match samples in sample_id column. Please check and try again.")
+                        sys.exit()
+	
+        datasets = []   
+
+        print('Analysing',uniqueSamples)
         
-        if len(uniqueSamples) == 1:
-            ds = dataset(pathToData)
-            datasets.append(ds)
-        elif len(uniqueSamples) > 1:
+        #if len(uniqueSamples) == 1:
+        #    ds = dataset(pathToData)
+        #    datasets.append(ds)
+        if len(uniqueSamples) >= 1:
             # Split it up, return multiple datasets
             for sample_id in uniqueSamples:
                 print('Preparing',sample_id)
@@ -319,6 +346,7 @@ def quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts):
                 plt.title(clusterNames[cl])
 
                 plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[cl] + ' (cluster ' + str(cl) + ')' + '_HistogramOfQuadratCounts.png',bbox_inches='tight')
+                plt.close()
 
         print("Quadrat cell distributions completed.")
         
