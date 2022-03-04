@@ -97,7 +97,7 @@ def main():
         functions = args.functions
      
         if bool(functions) == False:
-                functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','morueta-holme','networkstatistics']
+                functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','morueta-holme','networkstatistics','localclusteringheatmaps']
                 print("Running all functions:", functions)
         
         print("Checking what samples and rois to analyse...")
@@ -153,7 +153,8 @@ def main():
                             pathToLabelMatrix = '/project/covidhyperion/shared/data/panel2/tree/' + sub_path + '/deepcell/deepcell.tif'
                             labels = skimage.io.imread(pathToLabelMatrix)
                             networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors)
-
+                    if i == 'localclusteringheatmaps':
+                            localClusteringHeatmaps(ds, df_annotations, clusteringToUse, clusterNames)
 
 
 def preprocessing(pathToData, cluster_annotations,rois):
@@ -690,6 +691,141 @@ def networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels,
                 
         with open(saveFile,"wb") as fid:
             pickle.dump(toSave,fid)
-        print('network statistics completed')
+        print('Network statistics completed')
+
+def localClusteringHeatmaps(ds, df_annotations, clusteringToUse, clusterNames):
+        print("Starting clustering heatmaps")   
+        from utils_alt import returnAreaOfCircleInDomainAroundPoint
+        # Identify where contributions to clustering/exclusion between two cell types are strongest or weakest, and save the resulting heatmap
+        radiusOfInterest = 100 # microns
+        
+        # First we pre-calculate the area around each point (within the domain)
+        vfunc_returnAreaOfCircleInDomainAroundPoint = np.vectorize(returnAreaOfCircleInDomainAroundPoint,excluded=['points'])
+        areas = {}
+        allPoints = {}
+        for i, cluster in enumerate(df_annotations.ClusterNumber):
+                print('Cluster',cluster)
+
+                p0 = ds.points[ds.df[clusteringToUse] == cluster]
+                if np.shape(p0)[0]>0:
+                    p0_areas = vfunc_returnAreaOfCircleInDomainAroundPoint(index=np.arange(len(p0)), points=p0, r=radiusOfInterest, domainX=ds.domainX, domainY=ds.domainY)
+                    allPoints[cluster] = p0
+                    areas[cluster] = p0_areas
+      
+        # Now we use that to find the PCFs
+        # gs = np.zeros(shape=(len(df_annotations.ClusterNumber), len(df_annotations.ClusterNumber), len(np.arange(0,maxR_mum,dr_mum))))
+        outputs = {}
+        for a, clusterA in enumerate(df_annotations.ClusterNumber):
+                subOutputs = {}
+                for b, clusterB in enumerate(df_annotations.ClusterNumber):
+                        pair = [clusterA, clusterB]
+                        print(pair)
+                        
+                        p_A = ds.points[ds.df[clusteringToUse] == clusterA]#allPoints[clusterA]# ds.points[ds.df[clusteringToUse] == int(pair[0])]    
+                        p_B = ds.points[ds.df[clusteringToUse] == clusterB]#allPoints[clusterB]#ds.points[ds.df[clusteringToUse] == int(pair[1])]
+                        if np.shape(p_A)[0]>0 and np.shape(p_B)[0]>0:
+                            density_B = np.shape(p_B)[0]/(ds.domainX*ds.domainY)
+                            
+                            areas_A = areas[clusterA]
+                            
+                            distances_AtoB = cdist(p_A, p_B, metric='euclidean')
+                            contributions = distances_AtoB <= radiusOfInterest
+                            
+                            BnearA_observed = np.sum(contributions,axis=1)/areas_A # observed per unit area
+                            localPCFcontributions = BnearA_observed/density_B
+                            
+                            # Map PCF interpretation to [-1,1]
+                            maxPCFthreshold = 5.0
+                            minPCFthreshold = 1/maxPCFthreshold
+                            
+                            transformedLocalPCFcontributions = np.copy(localPCFcontributions)
+                            transformedLocalPCFcontributions[transformedLocalPCFcontributions < minPCFthreshold] = minPCFthreshold
+                            transformedLocalPCFcontributions[transformedLocalPCFcontributions > maxPCFthreshold] = maxPCFthreshold
+                            
+                            transformedLocalPCFcontributions[transformedLocalPCFcontributions<1] = -1/transformedLocalPCFcontributions[transformedLocalPCFcontributions<1]
+                            # That gives us values in [-maxPCFthreshold,-1] U [1,maxPCFthreshold]
+                            # Now map to [-1,1]
+                            transformedLocalPCFcontributions[transformedLocalPCFcontributions<0] = (transformedLocalPCFcontributions[transformedLocalPCFcontributions<0]+1)/(maxPCFthreshold-1)
+                            transformedLocalPCFcontributions[transformedLocalPCFcontributions>0] = (transformedLocalPCFcontributions[transformedLocalPCFcontributions>0]-1)/(maxPCFthreshold-1)
+                            
+                            # plt.figure()
+                            # plt.hist(transformedPs,bins=100)
+                            
+                            # plt.figure(figsize=(12,9))
+                            # plt.scatter(p_A[:,0],p_A[:,1],c=transformedLocalPCFcontributions,cmap='RdBu_r',vmin=-1,vmax=1)
+                            # plt.colorbar()
+                            # plt.gca().axis('equal')
+                          
+                            
+                            savePngHeatmaps = False
+                            if savePngHeatmaps:
+                                
+                                # Now we stick a Gaussian on top of each point 
+                                # This turns out to be a bit annoying. 
+                                # Solution: make a prototypical bell curve with height 1
+                                # Add a new one centred at (x,y), scaled by transformedPs
+                                containingCircleRadius = 150 # For bell curve, in microns
+                                x, y = np.meshgrid(np.arange(-containingCircleRadius,containingCircleRadius+0.1,1),np.arange(-containingCircleRadius,containingCircleRadius+0.1,1))
+                                dst = np.sqrt(x*x + y*y)
+                                sigma = 50
+                                bellCurve = np.exp(-( dst**2 / ( 2.0 * sigma**2 ) ) )
+                                # plt.figure()
+                                # plt.imshow(bellCurve)
+                                
+                                xrange = [-containingCircleRadius, ds.domainX+1+containingCircleRadius]
+                                yrange = [-containingCircleRadius, ds.domainY+1+containingCircleRadius]
+                                heatmap = np.zeros(shape=(xrange[1]-xrange[0],yrange[1]-yrange[0]))
+                                
+                                def addWeightedContribution(heatmap, weight, coordinate, xrange, yrange, bellCurve,containingCircleRadius):
+                                    x0 = int(coordinate[0]) - xrange[0] - containingCircleRadius
+                                    x1 = x0 + 2*containingCircleRadius + 1
+                                    y0 = int(coordinate[1]) - yrange[0] - containingCircleRadius
+                                    y1 = y0 + 2*containingCircleRadius + 1
+                                    heatmap[x0:x1,y0:y1] = heatmap[x0:x1,y0:y1] + bellCurve*weight
+                                    return heatmap
+                                
+                                for i in range(len(p_A)):
+                                    coordinate = p_A[i,:]
+                                    weight = transformedLocalPCFcontributions[i]
+                                    heatmap = addWeightedContribution(heatmap, weight, coordinate, xrange, yrange, bellCurve, containingCircleRadius)
+                                
+                                #%
+                                plt.figure(figsize=(12,9))
+                                l = int(np.ceil(np.max([heatmap.min(),heatmap.max()])))
+                                plt.imshow(heatmap.transpose(),cmap='RdBu_r',vmin=-l,vmax=l,origin='lower')
+                                plt.xlim([0,ds.domainX])
+                                plt.ylim([0,ds.domainY])
+                                plt.colorbar()
+                                ax = plt.gca()
+                                ax.grid(False)
+                                plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
+                                plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_localClusteringHeatmap.png',bbox_inches='tight')
+    
+                                plt.figure(figsize=(12,9))
+                                plt.scatter(p_A[:,0],p_A[:,1],c='b')
+                                plt.scatter(p_B[:,0],p_B[:,1],c='r')
+                                plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
+                                plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_localClusteringHeatmapScatterplot.png',bbox_inches='tight')
+                                plt.close('all')
+                            subOutputs[clusterB] = transformedLocalPCFcontributions
+                outputs[clusterA] = subOutputs
+                        
+                        
+                
+        saveFile = ds.pathToWriteOutput + ds.name + '_localClusteringHeatmap_data.p'
+        toSave = {'PickleFileGeneratedBy':'spatialstats.py',
+                  'transformedLocalPCFcontributions':outputs,
+                  'radiusOfInterest':radiusOfInterest,
+                  'maxPCFthreshold':maxPCFthreshold,
+                  'minPCFthreshold':minPCFthreshold
+                  }
+        if savePngHeatmaps:
+            toSave['bellcurve_containingCircleRadius'] =  containingCircleRadius
+            toSave['bellcurve_sigma'] = sigma
+                
+        with open(saveFile,"wb") as fid:
+            pickle.dump(toSave,fid)
+        
+        print("Local clustering heatmaps completed")   
 
 main()
