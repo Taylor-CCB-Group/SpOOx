@@ -31,7 +31,8 @@ option_list = list(
     make_option(c("--annot"), type="character", default=NULL,  help="File with annotations to be loaded for the plots.Can include more than one option with comma separated files (will be added as annotation2, etc). (optional)", metavar="character"),
     make_option(c("--k"), type="integer", default=30,  help="k parameter for Rphenograph."),
 
-    make_option(c("--save_sceobj"), type="logical", action="store_true", help="Include flag to save the SingleCellExperiment object as well.")
+    make_option(c("--save_sceobj"), type="logical", action="store_true", help="Include flag to save the SingleCellExperiment object as well."),
+    make_option(c("--draw_charts"), type="logical", default=FALSE ,help="draw charts - default is true")
 
 ); 
  
@@ -43,7 +44,7 @@ if (any(is.null(opt$infile),is.null(opt$var),is.null(opt$outdir),is.null(opt$ana
   stop("Arguments missing.n", call.=FALSE)
 }
 
-source("/stopgap/hyperion/lho/scripts/v2/hyperion/scripts/plotting_functions.R")
+
 
 ###########################
 c38 <- c("dodgerblue2", "#E31A1C", # red
@@ -105,64 +106,66 @@ sce[[paste0("harmony_phenograph_",datatransf)]] <- factor(membership(R_pheno_out
 sce_umap <- uwot::umap(my_harmony_embeddings,  n_components = 3)
 reducedDims(sce)[[paste0("HarmIntegr_UMAP_",datatransf)]] <- sce_umap
 
-sce_pheno <- data.frame(reducedDims(sce)[["UMAP"]],reducedDims(sce)[[paste0("HarmIntegr_UMAP_",datatransf)]])
-colnames(sce_pheno ) <- c("UMAP_1","UMAP_2","HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", "HarmIntegr_UMAP_3")
-sce_pheno <- cbind(sce_pheno, sce@colData)
-
-p1a <- ggplot(as.data.frame(sce_pheno), aes(UMAP_1, UMAP_2, col=sample_id)) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
-p2a <- ggplot(as.data.frame(sce_pheno), aes(HarmIntegr_UMAP_1, HarmIntegr_UMAP_2, col=sample_id)) + geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
-
-if(is.null(opt$annot)) {
-	previouspheno <- grep("phenograph_cluster", names(colData(sce)), value=T)
-	if (length(unique(sce_pheno[[previouspheno]]))<=30) {
-		p1b <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=previouspheno))+ scale_color_manual(values=c38) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
-		p2b <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=previouspheno)) + scale_color_manual(values=c38)+ geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
-	} else {
-		p1b <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=previouspheno)) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
-		p2b <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=previouspheno)) + geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
-	}
-} else {
-	p1b <- ggplot(as.data.frame(sce_pheno), aes(UMAP_1, UMAP_2, col=annotation))+ scale_color_manual(values=c38) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
-	p2b <- ggplot(as.data.frame(sce_pheno), aes(HarmIntegr_UMAP_1, HarmIntegr_UMAP_2, col=annotation)) + scale_color_manual(values=c38)+ geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
+if  (opt$draw_charts){
+  source("/stopgap/hyperion/lho/scripts/v2/hyperion/scripts/plotting_functions.R")
+  sce_pheno <- data.frame(reducedDims(sce)[["UMAP"]],reducedDims(sce)[[paste0("HarmIntegr_UMAP_",datatransf)]])
+  colnames(sce_pheno ) <- c("UMAP_1","UMAP_2","HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", "HarmIntegr_UMAP_3")
+  sce_pheno <- cbind(sce_pheno, sce@colData)
+  
+  p1a <- ggplot(as.data.frame(sce_pheno), aes(UMAP_1, UMAP_2, col=sample_id)) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
+  p2a <- ggplot(as.data.frame(sce_pheno), aes(HarmIntegr_UMAP_1, HarmIntegr_UMAP_2, col=sample_id)) + geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
+  
+  if(is.null(opt$annot)) {
+  	previouspheno <- grep("phenograph_cluster", names(colData(sce)), value=T)
+  	if (length(unique(sce_pheno[[previouspheno]]))<=30) {
+  		p1b <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=previouspheno))+ scale_color_manual(values=c38) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
+  		p2b <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=previouspheno)) + scale_color_manual(values=c38)+ geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
+  	} else {
+  		p1b <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=previouspheno)) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
+  		p2b <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=previouspheno)) + geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
+  	}
+  } else {
+  	p1b <- ggplot(as.data.frame(sce_pheno), aes(UMAP_1, UMAP_2, col=annotation))+ scale_color_manual(values=c38) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
+  	p2b <- ggplot(as.data.frame(sce_pheno), aes(HarmIntegr_UMAP_1, HarmIntegr_UMAP_2, col=annotation)) + scale_color_manual(values=c38)+ geom_point(size = 0.5)+theme_bw()+ guides(colour = guide_legend(override.aes = list(size=4)))
+  }
+  
+  if (length(unique(sce_pheno[,paste0("harmony_phenograph_",datatransf)]))<=30) {
+  	p1c <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw()+ scale_color_manual(values=c38)+ guides(colour = guide_legend(override.aes = list(size=4)))
+  	p2c <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw()+ scale_color_manual(values=c38)+ guides(colour = guide_legend(override.aes = list(size=4)))
+  } else {
+  	p1c <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
+  	p2c <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw()+guides(colour = guide_legend(override.aes = list(size=4)))
+  }
+  
+  pall <- plot_grid(p1a,p1b,p1c, p2a,p2b,p2c, ncol=3)
+  ggsave(pall, filename=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_UMAP_",datatransf,"_k", k,".pdf")), width = 30, height = 15)
+  
+  one_plot_heatmap <- plotExprHeatmap_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf),
+  	features=rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], row_anno = TRUE, bars=T) 
+  cat("Plotting the heatmap plots of the  phenograph clusters... \n")
+  pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_heatmap_",datatransf,"_k", k,".pdf")), height=10, width=15)
+  print(one_plot_heatmap)
+  dev.off()
+  
+  one_plot_exprs <- plotClusterExprs_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"]) 
+  cat("Plotting the expression density plots of the phenograph clusters... \n")
+  pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_exprsdens_",datatransf,"_k", k,".pdf")),  height=15, width=25)
+  print(one_plot_exprs)
+  dev.off()
+  
+  one_plot_exprs_scaled <- plotClusterExprs_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], assay="scaledtrim") 
+  pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_exprsdens_",datatransf,"_k", k,"_scaledtrim.pdf")),  height=15, width=25)
+  print(one_plot_exprs_scaled)
+  dev.off()
+  
+  one_plot_abund_box <- plotAbundances_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), group_by="sample_name", by="cluster_id" ) 
+  one_plot_abund_stripe <- plotAbundances_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), group_by="sample_name", by="sample_id") 
+  cat("Plotting the cluster abundances of the phenograph clusters per sample... \n")
+  pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_abund_",datatransf,"_k", k,".pdf")), height=10, width=15)
+  print(one_plot_abund_box)
+  print(one_plot_abund_stripe)
+  dev.off()
 }
-
-if (length(unique(sce_pheno[,paste0("harmony_phenograph_",datatransf)]))<=30) {
-	p1c <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw()+ scale_color_manual(values=c38)+ guides(colour = guide_legend(override.aes = list(size=4)))
-	p2c <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw()+ scale_color_manual(values=c38)+ guides(colour = guide_legend(override.aes = list(size=4)))
-} else {
-	p1c <- ggplot(as.data.frame(sce_pheno), aes_string("UMAP_1", "UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw() + guides(colour = guide_legend(override.aes = list(size=4)))
-	p2c <- ggplot(as.data.frame(sce_pheno), aes_string("HarmIntegr_UMAP_1", "HarmIntegr_UMAP_2", col=paste0("harmony_phenograph_",datatransf))) + geom_point(size = 0.5)+theme_bw()+guides(colour = guide_legend(override.aes = list(size=4)))
-}
-
-pall <- plot_grid(p1a,p1b,p1c, p2a,p2b,p2c, ncol=3)
-ggsave(pall, filename=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_UMAP_",datatransf,"_k", k,".pdf")), width = 30, height = 15)
-
-one_plot_heatmap <- plotExprHeatmap_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf),
-	features=rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], row_anno = TRUE, bars=T) 
-cat("Plotting the heatmap plots of the  phenograph clusters... \n")
-pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_heatmap_",datatransf,"_k", k,".pdf")), height=10, width=15)
-print(one_plot_heatmap)
-dev.off()
-
-one_plot_exprs <- plotClusterExprs_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"]) 
-cat("Plotting the expression density plots of the phenograph clusters... \n")
-pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_exprsdens_",datatransf,"_k", k,".pdf")),  height=15, width=25)
-print(one_plot_exprs)
-dev.off()
-
-one_plot_exprs_scaled <- plotClusterExprs_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], assay="scaledtrim") 
-pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_exprsdens_",datatransf,"_k", k,"_scaledtrim.pdf")),  height=15, width=25)
-print(one_plot_exprs_scaled)
-dev.off()
-
-one_plot_abund_box <- plotAbundances_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), group_by="sample_name", by="cluster_id" ) 
-one_plot_abund_stripe <- plotAbundances_updated(sce, cluster_id=paste0("harmony_phenograph_",datatransf), group_by="sample_name", by="sample_id") 
-cat("Plotting the cluster abundances of the phenograph clusters per sample... \n")
-pdf(file=file.path(opt$outdir, paste0(opt$analysisName,"_HarmonyInt_abund_",datatransf,"_k", k,".pdf")), height=10, width=15)
-print(one_plot_abund_box)
-print(one_plot_abund_stripe)
-dev.off()
-
 
 ##### saving 
 cat("Saving everything in ", opt$outdir, "... \n")

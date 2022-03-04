@@ -106,7 +106,9 @@ def main():
         #todo should not need to add a / 
         
         for ds in datasets:
-            ds.pathToWriteOutput = pathToWriteOutput+"/"
+            ds.pathToWriteOutput = pathToWriteOutput+"/quadratMethods/"
+            if not os.path.exists(ds.pathToWriteOutput):
+                os.mkdir(ds.pathToWriteOutput)
             #clusteringToUse = 'phenoGraph_cluster' ###ADD to cmd line?
             if len(df_annotations.ClusterNumber) < 21:
                 colors = [plt.cm.tab20(v) for v in range(len(df_annotations.ClusterNumber))]
@@ -129,6 +131,11 @@ def main():
                     r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringToUse)
     
             for i in functions:
+                    #get directory according to function and create the dirctory
+                    #if one does not exist
+                    ds.pathToWriteOutput=pathToWriteOutput+"/"+i+"/"
+                    if not os.path.exists(ds.pathToWriteOutput):
+                            os.mkdir(ds.pathToWriteOutput)
                     if i == 'celllocationmap':
                             cellLocationMap(ds, df_annotations, clusteringToUse, clusterNames, colors)
                     if i == 'contourplots':
@@ -569,7 +576,7 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                             plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
                             plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
                             plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
-                
+                            plt.close()               
         print("Pair correlation function completed.")   
     
 
