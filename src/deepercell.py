@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from email.policy import default
 from PIL.Image import composite
 import cv2
 from os import listdir, read
@@ -42,11 +43,11 @@ def File2List(file):
 
 
 
-def TiffNorm(src_image,dest_image,contrast=20):
+def TiffNorm(src_image,dest_image,contrast,brightness):
     img = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
     normed = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
     print("contrast=",contrast)
-    brightness = 0
+    print("brightness=",brightness)
     out = cv2.addWeighted(normed, contrast, normed, 0, brightness)
     cv2.imwrite(dest_image,out)
 
@@ -77,6 +78,17 @@ def BlackAndWhite(tiffFileName,blackAndWhiteOut):
     toPlot = img_as_ubyte(toPlot)
     imsave(blackAndWhiteOut,toPlot)
 
+def ZProject(tiffFileName,zProjectOut):
+    # convery tiff stack to z-projected tiff stack, unless only one slice
+    # then just copy the file
+    print("Converting ",tiffFileName,"to flattened ",zProjectOut)
+    img = imread(tiffFileName)
+    # if the number of images in tiff stack > 1, then flatten
+    if len(img.shape) > 2:
+        img = np.max(img,axis=0)
+        imsave(zProjectOut,img)
+    else:
+        imsave(zProjectOut,img)
 
 parser = argparse.ArgumentParser(description='''Generate label matrix mask from tiffs of nuclear and cytoplasm markers.
 Input is both a nuc and cyt file of histocat tiff filenames of the markers names.
@@ -93,9 +105,9 @@ parser.add_argument('--outdir', dest='imageOutDir',
                     help='output directory that will contain images from segmentation')
 parser.add_argument('--indir', dest='dirName',
                     help='directory of images (imctools histocat directory)')
-parser.add_argument('--brightness',type=int,
+parser.add_argument('--brightness',type=int, default =0,
                     help='brightness of the image')
-parser.add_argument('--contrast',type=int,
+parser.add_argument('--contrast',type=int, default=5,
                     help='contrast of the image')
 # Note default is 1 which is hyperion specific
 parser.add_argument('--imageMpp', dest='imageMpp', default = 1,
@@ -131,6 +143,7 @@ imageOut = os.path.join(args.imageOutDir,"deepcell.tif")
 mergedImage = os.path.join(args.imageOutDir,"mergenucandcyt.png")
 bwImageOut = os.path.join(args.imageOutDir,"bandwmask.png")
 contrast = args.contrast
+brightness = args.brightness
 
 
 print("*** Analysing",args.dirName," ***")
@@ -157,21 +170,24 @@ Tiff2Stack(imageCyt,cytoList,args.dirName)
 
 
 # Z project and flatten nuc to 1 image
-im1 = imread(imageNuc)
-im1Flattened = np.max(im1,axis=0)
-imsave(imageNucFlat,im1Flattened)
-print("Converting ",imageNuc,"to flattened ",imageNucFlat," using ",im1Flattened)
+ZProject(imageNuc,imageNucFlat)
+ZProject(imageCyt,imageCytFlat)
+
+# Z project and flatten nuc to 1 image
+#im1 = imread(imageNuc)
+#im1Flattened = np.max(im1,axis=0)
+#imsave(imageNucFlat,im1Flattened)
+#print("Converting ",imageNuc,"to flattened ",imageNucFlat," using ",im1Flattened)
 
 # Z project and flatten cyt to 1 image
-im2 = imread(imageCyt)
-im2Flattened = np.max(im2,axis=0)
-imsave(imageCytFlat,im2Flattened)
-print("Converting ",imageCyt," to flattened ",imageCytFlat," using ",im2Flattened)
-
+#im2 = imread(imageCyt)
+#im2Flattened = np.max(im2,axis=0)
+#imsave(imageCytFlat,im2Flattened)
+#print("Converting ",imageCyt," to flattened ",imageCytFlat," using ",im2Flattened)
 
 #enhance contrast on image
-TiffNorm(imageNucFlat, imageNucFlatNorm, contrast)
-TiffNorm(imageCytFlat, imageCytFlatNorm, contrast)
+TiffNorm(imageNucFlat, imageNucFlatNorm, contrast,brightness)
+TiffNorm(imageCytFlat, imageCytFlatNorm, contrast,brightness)
 
 imNuc = imread(imageNucFlatNorm)
 imCyt = imread(imageCytFlatNorm)
