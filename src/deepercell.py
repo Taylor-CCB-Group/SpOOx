@@ -71,12 +71,18 @@ def Tiff2Stack(fileName, imageList, dirName):
 
 def BlackAndWhite(tiffFileName,blackAndWhiteOut):
 # convert label matrix tif file to b/w png 
-    label = imread(tiffFileName)
-    boundaries = find_boundaries(label)
-    toPlot = label>0
-    toPlot = toPlot & ~boundaries
-    toPlot = img_as_ubyte(toPlot)
-    imsave(blackAndWhiteOut,toPlot)
+    print("Converting ",tiffFileName,"to ",blackAndWhiteOut)
+    # test if tiffFileName is a label matrix tif exists
+    if os.path.isfile(tiffFileName):  
+        label = imread(tiffFileName)
+        boundaries = find_boundaries(label)
+        toPlot = label>0
+        toPlot = toPlot & ~boundaries
+        toPlot = img_as_ubyte(toPlot)
+        imsave(blackAndWhiteOut,toPlot)
+    else:
+        print("Can't find ",tiffFileName) 
+   
 
 def ZProject(tiffFileName,zProjectOut):
     # convery tiff stack to z-projected tiff stack, unless only one slice
@@ -172,18 +178,6 @@ Tiff2Stack(imageCyt,cytoList,args.dirName)
 # Z project and flatten nuc to 1 image
 ZProject(imageNuc,imageNucFlat)
 ZProject(imageCyt,imageCytFlat)
-
-# Z project and flatten nuc to 1 image
-#im1 = imread(imageNuc)
-#im1Flattened = np.max(im1,axis=0)
-#imsave(imageNucFlat,im1Flattened)
-#print("Converting ",imageNuc,"to flattened ",imageNucFlat," using ",im1Flattened)
-
-# Z project and flatten cyt to 1 image
-#im2 = imread(imageCyt)
-#im2Flattened = np.max(im2,axis=0)
-#imsave(imageCytFlat,im2Flattened)
-#print("Converting ",imageCyt," to flattened ",imageCytFlat," using ",im2Flattened)
 
 #enhance contrast on image
 TiffNorm(imageNucFlat, imageNucFlatNorm, contrast,brightness)
