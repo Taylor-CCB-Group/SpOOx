@@ -125,6 +125,9 @@ def roi2images(src_dir,dest_dir,zegami_tsv):
     
     
     for file in onlyfiles:    
+        # ignore files containing the word ruffus
+        if "ruffus" in file:
+            continue
         print(file)
         src_image = src_dir + "/" + file
         basename = os.path.splitext(os.path.basename(src_image))[0];
