@@ -27,7 +27,6 @@ suppressPackageStartupMessages({
 option_list = list(
 
     make_option(c("--analysisName"), type="character", default=NULL, help="the name of this analysis", metavar="character"),
-
     make_option(c("--panel_file"), type="character", default=NULL, help="Config panel with columns marker_name and clustering defining markers to use for clustering.", metavar="character"),
     make_option(c("--metadata_file"), type="character", default=NULL, help="Text file with metadata information (sample_id, sample_name, condition, ROI)", metavar="character"),
     make_option(c("--only_include"), type="character", default=NULL, help="Name of specific ROI/sample/condition (sample_id/sample_name/condition) to process, if NULL it will process everything in the metadata file.", metavar="character"),
@@ -40,8 +39,11 @@ option_list = list(
     make_option(c("--q"), type="numeric", default=0.01,  help="Quantile for the trimming of the intensity values (if using the scaledtrim option for the transformation). default=0.01"),
 
     make_option(c("--k"), type="integer", default=30,  help="k parameter for Rphenograph."),
-    make_option(c("--run_dimRed"), type="logical", action="store_true", help="Include flag to also run dimensionality reduction."),
-    make_option(c("--save_sceobj"), type="logical", action="store_true", help="Include flag to save the SingleCellExperiment object as well.")
+    make_option(c("--run_dimRed"), type="logical", default=TRUE, action="store_true", help="Include flag to also run dimensionality reduction -default is True."),
+    make_option(c("--save_sceobj"), type="logical", default= TRUE ,action="store_true", help="Include flag to save the SingleCellExperiment object as well."),
+	  make_option(c("--out_dir"), type="character", default= NULL,help="the output directory - default is to calculate it from the input.", metavar="character"),
+    make_option(c("--draw_charts"), type="logical", default=FALSE ,help="draw charts - default is true"),
+    make_option(c("--use_subdirectory"), type="logical", default=FALSE ,help="If true  celldata.tab should e in signal extraction subdirectory in the specified path. default is FASLE")
 
 ); 
  
@@ -61,8 +63,10 @@ if (!is.null(opt$filters)) {
 	filters <- gsub(" ", replacement="", opt$filters)
 	filters <- unlist(strsplit(filters, split=","))
 }
+if (opt$draw_charts){
+  source("/stopgap/hyperion/lho/scripts/v2/hyperion/scripts/plotting_functions.R")
+}
 
-source("/stopgap/hyperion/lho/scripts/v2/hyperion/scripts/plotting_functions.R")
 
 ### add the colour scheme that I like better:
 c38 <- c("dodgerblue2", "#E31A1C", # red
@@ -86,7 +90,8 @@ c38 <- c("dodgerblue2", "#E31A1C", # red
 cat("Starting the preprocessing part... \n")
 prepanel <- read.table(opt$panel_file, header=T, stringsAsFactors=F,sep="\t")
 prepanel$marker_name <- gsub("-", replacement=".", prepanel$marker_name)
-panel <- data.frame(channel_name=prepanel$marker_name, marker_name=prepanel$marker_name, marker_class=ifelse(!is.na(prepanel$clustering), "type", "state"))
+#if cluster column has 1 use (type), anyother values will not be used
+panel <- data.frame(channel_name=prepanel$marker_name, marker_name=prepanel$marker_name, marker_class=ifelse(prepanel$clustering=="1", "type", "state"))
 
 md_file <- read.table(opt$metadata_file, header=T, stringsAsFactors=F, sep="\t")
 md_file$n_cells <- NA
@@ -140,6 +145,10 @@ if (!is.null(opt$only_include)) {
 	if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
 }
 
+if (! is.null(opt$out_dir)){
+  pathToSaveAnalysis=opt$out_dir
+}
+
 antib_data <- data.frame()
 celldata <- data.frame()
 
@@ -148,11 +157,11 @@ for (i in md_file$sample_id) {
 
 	cat("Uploading sample ", i, "\n")		
 
-	filename <- file.path(md_file$path[md_file$sample_id==i],"signalextraction","cellData.tab")
+	filename <- file.path(md_file$path[md_file$sample_id==i],ifelse(opt$use_subdirectory,"signalextraction",""),"cellData.tab")
 	#filename <- file.path(md_file$path[md_file$sample_id==i],"SignalExtraction",paste(i,"cellData.csv",sep="_"))
 
-	exp1 <- read.table(filename, header=T, stringsAsFactors=F, sep="\t")
-	exp1$cellID_name <- gsub(".png", replacement="", exp1$Image.Name)
+	exp1 <- read.table(filename, header=T, check.names=FALSE, stringsAsFactors=F, sep="\t")
+	exp1$cellID_name <- gsub(".png", replacement="", exp1$"Image Name")
 
 	### applying filters
 	if (!is.null(opt$filters)) {
@@ -171,7 +180,7 @@ for (i in md_file$sample_id) {
 	names(expr_only) <- sapply(names(expr_only), function(x) strsplit(x,"_")[[1]][1])
 
 	antib_data_temp <- select(expr_only, panel$channel_name)
-	index <- grep("Full.filepath", names(exp1))
+	index <- grep("Full filepath", names(exp1))
 	celldata_temp <- cbind(exp1[,1:index],select(expr_only, setdiff(names(expr_only),panel$channel_name)))
 
 	antib_data <- rbind(antib_data, antib_data_temp)
@@ -184,7 +193,7 @@ for (i in md_file$sample_id) {
 row.names(antib_data) <- celldata$cellID_name
 row.names(celldata) <- celldata$cellID_name
 row.names(panel) <- panel$channel_name
-celldata$sample_id <- sapply(celldata$Image.Name, function(x) strsplit(toupper(x), split="_CELL")[[1]][1])
+celldata$sample_id <- sapply(celldata$"Image Name", function(x) strsplit(toupper(x), split="_CELL")[[1]][1])
 
 ### creating the sce object
 
@@ -259,34 +268,35 @@ cat("\n The modularity of the graph is ", modularity(R_pheno_out[[2]]), "\n")
 
 sce[[paste0("phenograph_cluster_", datatransf,"_k", k)]] <- factor(membership(R_pheno_out[[2]]))
 
-### Plots
+### Plots 
+if  (opt$draw_charts){
+  one_plot_heatmap <- plotExprHeatmap_updated(sce, cluster_id=paste0("phenograph_cluster_", datatransf,"_k", k),
+  	features=rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], row_anno = TRUE, bars=T) 
+  cat("Plotting the heatmap plots of the  phenograph clusters... \n")
+  pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_heatmap_k", k,".pdf")), height=10, width=15)
+  print(one_plot_heatmap)
+  dev.off()
+  
+  one_plot_exprs <- plotClusterExprs_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"]) 
+  cat("Plotting the expression density plots of the phenograph clusters... \n")
+  pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_exprsdens_k", k,".pdf")), height=15, width=25)
+  print(one_plot_exprs)
+  dev.off()
 
-one_plot_heatmap <- plotExprHeatmap_updated(sce, cluster_id=paste0("phenograph_cluster_", datatransf,"_k", k),
-	features=rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], row_anno = TRUE, bars=T) 
-cat("Plotting the heatmap plots of the  phenograph clusters... \n")
-pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_heatmap_k", k,".pdf")), height=10, width=15)
-print(one_plot_heatmap)
-dev.off()
-
-one_plot_exprs <- plotClusterExprs_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"]) 
-cat("Plotting the expression density plots of the phenograph clusters... \n")
-pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_exprsdens_k", k,".pdf")), height=15, width=25)
-print(one_plot_exprs)
-dev.off()
-
-one_plot_exprs_scaled <- plotClusterExprs_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], assay="scaledtrim") 
-pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_exprsdens_k", k,"_scaledtrim.pdf")), height=15, width=25)
-print(one_plot_exprs_scaled)
-dev.off()
-
-if (nrow(sce@metadata$experiment_info)>1) {
-	one_plot_abund_box <- plotAbundances_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), group_by="sample_name", by="cluster_id" ) 
-	one_plot_abund_stripe <- plotAbundances_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), group_by="sample_name", by="sample_id") 
-	cat("Plotting the cluster abundances of the phenograph clusters per sample... \n")
-	pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_clusterabund_k", k,".pdf")), height=10, width=15)
-	print(one_plot_abund_box)
-	print(one_plot_abund_stripe)
+  one_plot_exprs_scaled <- plotClusterExprs_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"], assay="scaledtrim") 
+  pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_exprsdens_k", k,"_scaledtrim.pdf")), height=15, width=25)
+  print(one_plot_exprs_scaled)
+  dev.off()
+  
+  if (nrow(sce@metadata$experiment_info)>1) {
+  	one_plot_abund_box <- plotAbundances_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), group_by="sample_name", by="cluster_id" ) 
+  	one_plot_abund_stripe <- plotAbundances_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), group_by="sample_name", by="sample_id") 
+  	cat("Plotting the cluster abundances of the phenograph clusters per sample... \n")
+  	pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_clusterabund_k", k,".pdf")), height=10, width=15)
+  	print(one_plot_abund_box)
+  	print(one_plot_abund_stripe)
 	dev.off()
+}
 
 #  require(ggcorrplot, quietly=T) missing
 #	if (length(unique(colData(sce)$sample_name))>1) {
@@ -317,23 +327,25 @@ if (opt$run_dimRed) {
 	pheno_ks <- paste0("phenograph_cluster_", datatransf,"_k", k)
 	sce_pheno <- cbind(sce_pheno, sce@colData)
 	sce_pheno[[pheno_ks]] <- as.factor(sce_pheno[[pheno_ks]])
-	if (length(levels(sce_pheno[[pheno_ks]]))<=27) {
-		one_plot_tsne <- ggplot(sce_pheno, aes_string(x="TSNE1", y="TSNE2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
-		one_plot_umap <- ggplot(sce_pheno, aes_string(x="UMAP1", y="UMAP2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
-	} else {
-		one_plot_tsne <- ggplot(sce_pheno, aes_string(x="TSNE1", y="TSNE2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() 
-		one_plot_umap <- ggplot(sce_pheno, aes_string(x="UMAP1", y="UMAP2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() 
+	if (opt$draw_charts){
+  	if (length(levels(sce_pheno[[pheno_ks]]))<=27) {
+  		one_plot_tsne <- ggplot(sce_pheno, aes_string(x="TSNE1", y="TSNE2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
+  		one_plot_umap <- ggplot(sce_pheno, aes_string(x="UMAP1", y="UMAP2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
+  	} else {
+  		one_plot_tsne <- ggplot(sce_pheno, aes_string(x="TSNE1", y="TSNE2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() 
+  		one_plot_umap <- ggplot(sce_pheno, aes_string(x="UMAP1", y="UMAP2", col=pheno_ks)) + geom_point(size = 0.5) + theme_classic() 
+  	}
+  
+  	tsne_sample <- ggplot(sce_pheno, aes_string(x="TSNE1", y="TSNE2", col="sample_id")) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
+  	umap_sample <- ggplot(sce_pheno, aes_string(x="UMAP1", y="UMAP2", col="sample_id")) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
+  
+  	pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_TSNEUMAP_k", k,".pdf")), height=8, width=10)
+  	    print(one_plot_tsne)
+  	    print(one_plot_umap)
+  	    print(tsne_sample)
+  	    print(umap_sample)
+  	dev.off()
 	}
-
-	tsne_sample <- ggplot(sce_pheno, aes_string(x="TSNE1", y="TSNE2", col="sample_id")) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
-	umap_sample <- ggplot(sce_pheno, aes_string(x="UMAP1", y="UMAP2", col="sample_id")) + geom_point(size = 0.5) + theme_classic() + scale_color_manual(values=c38)
-
-	pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_TSNEUMAP_k", k,".pdf")), height=8, width=10)
-	    print(one_plot_tsne)
-	    print(one_plot_umap)
-	    print(tsne_sample)
-	    print(umap_sample)
-	dev.off()
 
 	my_dims <- data.frame(reducedDims(sce)[[1]])
 	colnames(my_dims) <- paste(names(reducedDims(sce))[1], c(1,2), sep="_")
