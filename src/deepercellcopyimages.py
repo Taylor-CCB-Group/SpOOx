@@ -113,8 +113,8 @@ sample=elements[-3]
 roi=elements[-2]
 newName=condition+"_"+sample+"_"+roi+".png"
 
-if(os.path.isfile(bwImageOut)):
-    zegami_deepcell_mask_dir = os.path.join(zegamiDir,"deepcell_mask")
+if (os.path.isfile(bwImageOut)):
+    zegami_deepcell_mask_dir = os.path.join(zegamiDir,args.imageDir.split("/")[-1])
     zegami_deepcell_mask_file = os.path.join(zegami_deepcell_mask_dir,newName) 
     os.makedirs(zegami_deepcell_mask_dir,exist_ok=True)
     print("copying",bwImageOut,"to",zegami_deepcell_mask_file)
