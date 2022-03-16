@@ -121,11 +121,11 @@ if not runAsScript:
 
     # print(args)
     #st if analysis name not specified autogenerate from the file path of the label matrix path
-    #if (args.analysisName):
-    #    analysisName = args.analysisName
-    #else:
+    if (args.analysisName):
+        analysisName = args.analysisName
+    else:
+        analysisName = AnalysisNameFromPath(args.pathToLabelMatrix)
     
-    analysisName = AnalysisNameFromPath(args.pathToLabelMatrix)
     print(args.pathToLabelMatrix)
     print("Name of analysis  : " + analysisName)
     
