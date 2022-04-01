@@ -22,7 +22,7 @@ cd <your working dir>
 cp -r SpOOx .
 cp parse_ome.py .
 cp parse_mcd.py .
-cp make_metadata.py
+cp make_metadata.py .
 cp hyperion_pipeline.py .
 cp Rphenoclustering.R .
 ```
