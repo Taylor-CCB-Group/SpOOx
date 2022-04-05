@@ -1,34 +1,23 @@
 ## SpOOx - Spatial Omics Oxford Analysis Pipeline
 
 ### Set-up the pipeline ##################
-Note: assuming conda has been installed
+Note: assuming conda / mamba have been installed and in the system path
+```
+git clone https://github.com/bioinfbloke/SpOOx.git
+```
 
 ```
-cd <your conda dir>
-
-cp hyperion.yml .
-cp conda.sh .    
-
-source conda.sh  
 conda activate base
-mamba env create -n hyperion -f hyperion.yml
+mamba env create -n hyperion -f </path/to/>hyperion.yml
 conda activate hyperion
 ```
 
 ### Run the pipeline ##################
-```
-cd <your working dir>
-
-cp -r SpOOx .
-cp parse_ome.py .
-cp parse_mcd.py .
-cp make_metadata.py .
-cp hyperion_pipeline.py .
-cp Rphenoclustering.R .
-```
 
 \# config:
 ```
+cd <your_working_dir>
+
 cp pipeline.yml .
 # edit pipeline.yml params (eg, cluster queue name;  zegami options)
 ```
@@ -69,11 +58,13 @@ python hyperion_pipeline.py make deepcell
 ```
 python hyperion_pipeline.py make signal_extraction
 ```
+Optional step for visualisation using Zegami (account required: https://zegami.com/)
 ```
 python hyperion_pipeline.py make zegami_roi
 ```
 
 ### Final steps after pipeline:
+Note: outside conda environment:
 
 ###  1. clustering:
 ```
