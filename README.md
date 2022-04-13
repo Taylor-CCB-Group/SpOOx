@@ -1,7 +1,7 @@
 ## SpOOx - Spatial Omics Oxford Analysis Pipeline
 
 ### Set-up the pipeline ##################
-Note: assuming conda / mamba have been installed and in the system path
+Note: assuming conda has been installed and in the system path
 ```
 git clone https://github.com/bioinfbloke/SpOOx.git
 ```
