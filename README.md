@@ -8,8 +8,7 @@ git clone https://github.com/bioinfbloke/SpOOx.git
 
 ```
 conda activate base
-conda install mamba
-mamba env create -n hyperion -f </path/to/>hyperion.yml
+conda env create -n hyperion -f </path/to/>hyperion.yml
 conda activate hyperion
 ```
 
