@@ -43,6 +43,9 @@ mkdir mcd
 python hyperion_pipeline.py show
 ```
 ```
+python hyperion_pipeline.py mark_input_folders
+```
+```
 python hyperion_pipeline.py make mcd_to_tiff
 ```
 ```
