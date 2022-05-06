@@ -45,7 +45,7 @@ parser.add_argument('--infile', dest='infile', default = "cellData.tab",
                     help='the file it will look to merge')		
 parser.add_argument('--outfile', dest='outfile', default = "mergecellData.tab",
                     help='the file to write out')		
-parser.add_argument('--minarea', dest='minarea', default = "5", nargs='?', const=1, type=int,
+parser.add_argument('--minarea', dest='minarea', default = "50", nargs='?', const=1, type=int,
                     help='minimum value for area of each cell')		
 parser.add_argument('--maxarea', dest='maxarea', default = "300", nargs='?', const=1, type=int,
                     help='maximum value for area of each cell')		
