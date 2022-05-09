@@ -26,14 +26,14 @@ suppressPackageStartupMessages({
 # parsing the arguments
 option_list = list(
 
-    make_option(c("--analysisName"), type="character", default=NULL, help="the name of this analysis", metavar="character"),
-    make_option(c("--panel_file"), type="character", default=NULL, help="Config panel with columns marker_name and clustering defining markers to use for clustering.", metavar="character"),
-    make_option(c("--metadata_file"), type="character", default=NULL, help="Text file with metadata information (sample_id, sample_name, condition, ROI)", metavar="character"),
+    make_option(c("--analysisName"), type="character", default="test", help="the name of this analysis", metavar="character"),
+    make_option(c("--panel_file"), type="character", default = "/project/taylorlab/sergeant/rtest/markers.tsv", help="Config panel with columns marker_name and clustering defining markers to use for clustering.", metavar="character"),
+    make_option(c("--metadata_file"), type="character", default= "/project/taylorlab/sergeant/rtest/metadata.txt", help="Text file with metadata information (sample_id, sample_name, condition, ROI)", metavar="character"),
     make_option(c("--only_include"), type="character", default=NULL, help="Name of specific ROI/sample/condition (sample_id/sample_name/condition) to process, if NULL it will process everything in the metadata file.", metavar="character"),
     make_option(c("--samples_to_exclude"), type="character", default=NULL, help="Sample_id to exclude from the analysis(comma separated).", metavar="character"),
 
     make_option(c("--filters"), type="character", default=NULL, help="Comma separated filters to be evaluated. The variables need to be column names (attention to the case). (e.g. Area>30,Eccentricity<=0.4)", metavar="character"),
-    make_option(c("--datatransf"), type="character", default="arcsinh",  help="Data transformation for running the clustering on. Options: nothing=no transformation, arcsinh= arcsinh 
+    make_option(c("--datatransf"), type="character", default="scaledtrim",  help="Data transformation for running the clustering on. Options: nothing=no transformation, arcsinh= arcsinh 
 		transformation, scaled=scaled transformation of the input, arcsinhscaled=scaled transformation of the arcsinh, scaledtrim=the scaled and trimmed values of the input (q=0.01 if not specified),
 		arcsinhscaledtrim=the scaled and trimmed values of the arcsinh (q=0.01 if not specified). (default=exprs)"),
     make_option(c("--q"), type="numeric", default=0.01,  help="Quantile for the trimming of the intensity values (if using the scaledtrim option for the transformation). default=0.01"),
@@ -41,9 +41,9 @@ option_list = list(
     make_option(c("--k"), type="integer", default=30,  help="k parameter for Rphenograph."),
     make_option(c("--run_dimRed"), type="logical", default=TRUE, action="store_true", help="Include flag to also run dimensionality reduction -default is True."),
     make_option(c("--save_sceobj"), type="logical", default= TRUE ,action="store_true", help="Include flag to save the SingleCellExperiment object as well."),
-	  make_option(c("--out_dir"), type="character", default= NULL,help="the output directory - default is to calculate it from the input.", metavar="character"),
+    make_option(c("--out_dir"), type="character",default="/project/taylorlab/sergeant/rtest", help="the output directory - default is to calculate it from the input.", metavar="character"),
     make_option(c("--draw_charts"), type="logical", default=FALSE ,help="draw charts - default is true"),
-    make_option(c("--use_subdirectory"), type="logical", default=FALSE ,help="If true  celldata.tab should e in signal extraction subdirectory in the specified path. default is FASLE")
+    make_option(c("--use_subdirectory"), type="logical", default=TRUE ,help="If true  celldata.tab should e in signal extraction subdirectory in the specified path. default is FASLE")
 
 ); 
  
@@ -89,7 +89,7 @@ c38 <- c("dodgerblue2", "#E31A1C", # red
 
 cat("Starting the preprocessing part... \n")
 prepanel <- read.table(opt$panel_file, header=T, stringsAsFactors=F,sep="\t")
-prepanel$marker_name <- gsub("-", replacement=".", prepanel$marker_name)
+#prepanel$marker_name <- gsub("-", replacement=".", prepanel$marker_name)
 #if cluster column has 1 use (type), anyother values will not be used
 panel <- data.frame(channel_name=prepanel$marker_name, marker_name=prepanel$marker_name, marker_class=ifelse(prepanel$clustering=="1", "type", "state"))
 
@@ -108,7 +108,7 @@ if (!is.null(opt$only_include)) {
 		md_file <- md_file[md_file$sample_id %in% samples_to_include,]
 		if (nrow(md_file)==0) stop("Sample not valid. Check the metadata file to make sure the naming scheme is correct.")
 		pathToSaveAnalysis <- paste0(md_file$path,"clustering")
-		if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
+		#if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
 	} else if (grepl("SAMPLE", toupper(samples_to_include[1]))) {
 		md_file <- md_file[md_file$sample_name %in% samples_to_include,]
 		if (nrow(md_file)==0) stop("Sample name not valid. Check the metadata file to make sure the naming scheme is correct.")
@@ -122,7 +122,7 @@ if (!is.null(opt$only_include)) {
 		} else {
 			pathToSaveAnalysis <-  paste0(strsplit(md_file$path[1], split="ROI")[[1]][1],"clustering")
 		}
-		if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
+		#if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
 	} else {
 		md_file <- md_file[md_file$condition %in% samples_to_include,]
 		if (nrow(md_file)==0) stop("Condition not valid. Check the metadata file to make sure the naming scheme is correct.")
@@ -134,7 +134,7 @@ if (!is.null(opt$only_include)) {
 			temp_path <-  paste(c(temp_dir[1:(length(temp_dir)-3)],"clustering"), collapse="/")
 			if (!dir.exists(temp_path)) dir.create(temp_path, showWarnings = FALSE)
 		}
-		if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
+		#if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
 	}
 } else {
 	temp_dir <- strsplit(md_file$path[1], split="/")[[1]]
@@ -142,12 +142,14 @@ if (!is.null(opt$only_include)) {
 	pathToSaveAnalysis <-  paste(c(temp_dir[1:(length(temp_dir)-3)],"clustering",paste(samples_to_include,collapse="_")), collapse="/")
 	temp_path <-  paste(c(temp_dir[1:(length(temp_dir)-3)],"clustering"), collapse="/")
 	if (!dir.exists(temp_path)) dir.create(temp_path, showWarnings = FALSE)
-	if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
+	#if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
 }
 
 if (! is.null(opt$out_dir)){
   pathToSaveAnalysis=opt$out_dir
+  
 }
+if (!dir.exists(pathToSaveAnalysis)) dir.create(pathToSaveAnalysis, showWarnings = FALSE)
 
 antib_data <- data.frame()
 celldata <- data.frame()
@@ -193,7 +195,7 @@ for (i in md_file$sample_id) {
 row.names(antib_data) <- celldata$cellID_name
 row.names(celldata) <- celldata$cellID_name
 row.names(panel) <- panel$channel_name
-celldata$sample_id <- sapply(celldata$"Image Name", function(x) strsplit(toupper(x), split="_CELL")[[1]][1])
+celldata$sample_id <- sapply(celldata$"Image Name", function(x) strsplit(x, split="_CELL")[[1]][1])
 
 ### creating the sce object
 
@@ -276,7 +278,7 @@ if  (opt$draw_charts){
   pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_heatmap_k", k,".pdf")), height=10, width=15)
   print(one_plot_heatmap)
   dev.off()
-  
+
   one_plot_exprs <- plotClusterExprs_updated(sce, cluster_id=paste0("phenograph_cluster_",datatransf,"_k", k), features = rowData(sce)$channel_name[rowData(sce)$marker_class=="type"]) 
   cat("Plotting the expression density plots of the phenograph clusters... \n")
   pdf(file=file.path(pathToSaveAnalysis, paste0(opt$analysisName,"_Rpheno_exprsdens_k", k,".pdf")), height=15, width=25)

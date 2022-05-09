@@ -74,6 +74,8 @@ def main():
 
 
 
+
+
         args = parser.parse_args()
 
         if (os.path.exists(args.cluster_annotations) == False):
@@ -705,7 +707,6 @@ def localClusteringHeatmaps(ds, df_annotations, clusteringToUse, clusterNames):
         from utils_alt import returnAreaOfCircleInDomainAroundPoint
         # Identify where contributions to clustering/exclusion between two cell types are strongest or weakest, and save the resulting heatmap
         radiusOfInterest = 100 # microns
-        
         # First we pre-calculate the area around each point (within the domain)
         vfunc_returnAreaOfCircleInDomainAroundPoint = np.vectorize(returnAreaOfCircleInDomainAroundPoint,excluded=['points'])
         areas = {}
@@ -764,7 +765,7 @@ def localClusteringHeatmaps(ds, df_annotations, clusteringToUse, clusterNames):
                             # plt.gca().axis('equal')
                           
                             
-                            savePngHeatmaps = False
+                            savePngHeatmaps = True
                             if savePngHeatmaps:
                                 
                                 # Now we stick a Gaussian on top of each point 
@@ -835,4 +836,6 @@ def localClusteringHeatmaps(ds, df_annotations, clusteringToUse, clusterNames):
         
         print("Local clustering heatmaps completed")   
 
-main()
+
+if __name__ == "__main__":
+    main()

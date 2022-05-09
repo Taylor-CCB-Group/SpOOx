@@ -1,3 +1,4 @@
+
 import numpy as np
 import pandas as pd
 import os
@@ -24,18 +25,18 @@ class dataset:
         # We estimate domain size by taking most extreme values and rounding up to nearest 50 microns
         self.domainX = ceil(np.max(self.df['x'])/50.0)*50
         self.domainY = ceil(np.max(self.df['y'])/50.0)*50
-        
-        
+
+
 class dataset_filterSampleID:
-    # Alternative creation of dataset with the same format as the above, but generated 
+    # Alternative creation of dataset with the same format as the above, but generated
     # by passing a sample id. Needed for when people decide that we're going to
-    # ignore the decisions we spent ages meeting over for the last year and just 
+    # ignore the decisions we spent ages meeting over for the last year and just
     # merge all the data together into a giant heap.
-    
+
     def __init__(self, pathToData, sample_id):
         df = pd.read_csv(pathToData,delimiter='\t')
         df = df[df['sample_id'] == sample_id]
-        
+
         self.df = df
 
         self.roi = df.iloc[0].ROI
@@ -46,22 +47,12 @@ class dataset_filterSampleID:
         self.name = self.indication + "_" + self.sample + "_" + self.roi
         self.pathToCellData = pathToData
         #self.pathToWriteOutput = self.baseFolderPath + '/spatial_stats_outputs/'
-        
+
         self.points = np.asarray((self.df['x'], self.df['y'])).transpose()
         # We estimate domain size by taking most extreme values and rounding up to nearest 50 microns
         self.domainX = ceil(np.max(self.df['x'])/50.0)*50
         self.domainY = ceil(np.max(self.df['y'])/50.0)*50
-        
 
-# def plotPCF(ax, radii, g, label=None, includeZero=True):
-#     # Helper function to plot a PCF
-#     if not includeZero:
-#         radii = radii[1:]
-#         g = g[1:]
-#     ax.plot(radii, g, label=label)
-#     ax.set_xlabel('r ($\\mu$m)')
-#     ax.set_ylabel('g(r)')
-#     ax.axhline(y=1,c=[0.5,0.5,0.5],linestyle=':')
 
 def plotPCFWithBootstrappedConfidenceInterval(ax, radii, g, contributions, points, xmax, ymax, label=None, includeZero=True):
     # Helper function to plot a PCF with 95% CI
@@ -91,22 +82,22 @@ def plotPCFWithBootstrappedConfidenceInterval(ax, radii, g, contributions, point
                 rectNs[rectID] = sum(accept)
             # rectangleIDs[accept] = rectID
             rectID = rectID + 1
-            
+
 
     # Each bootstrap sample, we select nRectanglesX*nRectanglesY rectangles and construct a PCF from them
     numBootstrapSims = 999
     samplePCFs = np.zeros(shape=(numBootstrapSims, np.shape(contributions)[1]))
     toSample = np.random.choice(nRectanglesX*nRectanglesY, size=(nRectanglesX*nRectanglesY,numBootstrapSims))
-    
-    
+
+
     # First sum down each of the 400 boxes (leaves 999 by 30)
     # Then sum down the 400 boxes for the Ns (leaving 999x1)
     # Then divide each entry along the remaining line
     sample = np.sum(rectContributions[toSample,:],axis=0)
     Ns = np.sum(rectNs[toSample],axis=0)
-    
+
     samplePCFs = sample / Ns[:,np.newaxis]
-    
+
 
 
     # Get 95% CI
@@ -114,6 +105,7 @@ def plotPCFWithBootstrappedConfidenceInterval(ax, radii, g, contributions, point
     PCF_max = 2*np.mean(samplePCFs,axis=0) - np.percentile(samplePCFs, 2.5, axis=0)
 #    PCF_min = np.insert(PCF_min, 0, 0)
 #    PCF_max = np.insert(PCF_max, 0, 0)
+
 
     if not includeZero:
         radii = radii[1:]
@@ -129,49 +121,41 @@ def plotPCFWithBootstrappedConfidenceInterval(ax, radii, g, contributions, point
     return 0
 
 
-def CalculateBootstrapAroundCSRForPValues(N_A, N_B, domainX, domainY, dr, maxR, numBootstrapSamples):
-    from scipy.spatial.distance import cdist
-    from multiprocessing import Pool
 
-    bootstrapSamples = np.zeros(shape=(numBootstrapSamples, len(np.arange(0, maxR, dr))))
+def CalculateBootstrapAroundCSRForPValues(N_A, N_B, domainX, domainY, dr_mum, maxR_mum, numBootstrapSamples):
+    from scipy.spatial.distance import cdist
+    #from multiprocessing import Pool
+    #import matplotlib.pyplot as plt
+
+    bootstrapSamples = np.zeros(shape=(numBootstrapSamples, len(np.arange(0, maxR_mum, dr_mum))))
+
+    density_B = N_B / (domainX * domainY)
+    PCF_radii = np.arange(0, maxR_mum, dr_mum)
     for boot in range(numBootstrapSamples):
-        print(str(100*(boot+1)/numBootstrapSamples) + '%')
-        pointsA = np.random.rand(N_A, 2) * np.asarray([domainX, domainY])
-        pointsB = np.random.rand(N_B, 2) * np.asarray([domainX, domainY])
+        if boot % 10 == 0:
+            print(str(100*(boot)/numBootstrapSamples) + '%')
+        points_A = np.random.rand(N_A, 2) * np.asarray([domainX, domainY])
+        points_B = np.random.rand(N_B, 2) * np.asarray([domainX, domainY])
+
+        # First calculate areas
+        areas_A = getAnnulusAreasAroundPoints(points_A, dr_mum, maxR_mum, domainX, domainY)
+        areas_B = getAnnulusAreasAroundPoints(points_B, dr_mum, maxR_mum, domainX, domainY)
 
         # Shape (N_A, N_B)
-        distances_AtoB = cdist(pointsA, pointsB, metric='euclidean')
-        PCF_radii = np.arange(0, maxR, dr)
+        distances_AtoB = cdist(points_A, points_B, metric='euclidean')
+        radii, g, contributions = crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum)
+        bootstrapSamples[boot, :] = np.transpose(g)
 
-        pointDensity_A = N_A / (domainX * domainY)
-        pointDensity_B = N_B / (domainX * domainY)
-
-        PCF_contributions = []
-
-        # Run at most nParallelPoints points simultaneously
-        nParallelPoints = 100
-        pointIndexRanges = np.arange(0, N_A, nParallelPoints)
-        pointIndexRanges = np.append(pointIndexRanges, N_A)
-
-        for ind_A in range(len(pointIndexRanges) - 1):
-            pool = Pool(maxtasksperchild=200)
-            minInd = pointIndexRanges[ind_A]
-            maxInd = pointIndexRanges[ind_A + 1]
-            results = [pool.apply_async(returnPCFContribution, args=(
-                point_ind, pointDensity_B, PCF_radii, distances_AtoB[point_ind], pointsA[point_ind, 0], pointsA[point_ind, 1],
-                domainX, domainY)) for point_ind in range(minInd, maxInd)]
-            output = [p.get() for p in results]
-
-            PCF_contributions.extend(output)
-            PCF_values = sum(PCF_contributions)
-            # print(str(round(100 * (ind_A + 1) / (len(pointIndexRanges)-1), 2)) + '%')
-            pool.close()
-            pool.join()
-
-        PCF_values = PCF_values / N_A
-        PCF_values = np.insert(PCF_values, 0, 1)
-        bootstrapSamples[boot, :] = PCF_values
-    return bootstrapSamples
+    # # Plot halos
+    # plt.figure()
+    # plt.plot(PCF_radii,np.percentile(bootstrapSamples.transpose(),5,axis=1),color=[1,0,0])
+    # plt.plot(PCF_radii,np.percentile(bootstrapSamples.transpose(),95,axis=1),color=[1,0,0])
+    # plt.plot(PCF_radii,np.percentile(bootstrapSamples.transpose(),1,axis=1),color=[1,0.6,0.6])
+    # plt.plot(PCF_radii,np.percentile(bootstrapSamples.transpose(),99,axis=1),color=[1,0.6,0.6])
+    # plt.plot(PCF_radii,np.percentile(bootstrapSamples.transpose(),0.5,axis=1),color=[1,0.8,0.8])
+    # plt.plot(PCF_radii,np.percentile(bootstrapSamples.transpose(),99.5,axis=1),color=[1,0.8,0.8])
+    # plt.gca().axhline(1,color=[0,0,0],linestyle=':')
+    return PCF_radii, bootstrapSamples
 
 
 def returnIntersectionPoints(x0, y0, r, domainX, domainY):
@@ -233,6 +217,8 @@ def returnIntersectionPoints(x0, y0, r, domainX, domainY):
             intersectionPoints.append([x0 - np.sqrt(r ** 2 - (domainY - y0) ** 2), domainY])
     return intersectionPoints
 
+
+
 def returnAreaOfCircleInDomain(x0, y0, r, domainX, domainY):
     intersectionPoints = returnIntersectionPoints(x0, y0, r, domainX, domainY)
 
@@ -287,10 +273,13 @@ def returnAreaOfCircleInDomain(x0, y0, r, domainX, domainY):
                 area = area + 0.5 * theta * r ** 2
     return area
 
+
 def returnAreaOfCircleInDomainAroundPoint(index, points, r, domainX, domainY):
     point = points[index,:]
     area = returnAreaOfCircleInDomain(point[0], point[1], r, domainX, domainY)
     return area
+
+
 
 
 def getAnnulusAreasAroundPoints(points_i, dr, maxR, domainX, domainY):
@@ -301,32 +290,34 @@ def getAnnulusAreasAroundPoints(points_i, dr, maxR, domainX, domainY):
 
     PCF_radii_lower = np.arange(0, maxR, dr)
     PCF_radii_upper = np.arange(dr, maxR + dr, dr)
-    
+
     allAreas = np.zeros(shape=(len(points_i),len(PCF_radii_lower)))
-    
+
     for annulus in range(len(PCF_radii_lower)):
         inner = PCF_radii_lower[annulus]
         outer = PCF_radii_upper[annulus]
-        
+
         areas_in = vfunc_returnAreaOfCircleInDomainAroundPoint(index=np.arange(len(points_i)), points=points_i, r=inner, domainX=domainX, domainY=domainY)
         areas_out = vfunc_returnAreaOfCircleInDomainAroundPoint(index=np.arange(len(points_i)), points=points_i, r=outer, domainX=domainX, domainY=domainY)
         areas = areas_out - areas_in
-        
+
         allAreas[:,annulus] = areas
     return allAreas
 
+
+
 def crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum):
     N_A = np.shape(distances_AtoB)[0]
-        
+
     PCF_radii_lower = np.arange(0, maxR_mum, dr_mum)
     PCF_radii_upper = np.arange(dr_mum, maxR_mum + dr_mum, dr_mum)
-    
+
     crossPCF_AtoB = np.ones(shape=(len(PCF_radii_lower),1))
     contributions = np.zeros(shape=(N_A,len(PCF_radii_lower)))
     for annulus in range(len(PCF_radii_lower)):
         inner = PCF_radii_lower[annulus]
         outer = PCF_radii_upper[annulus]
-        
+
         # Find pairwise distances within this radius
         distanceMask = np.logical_and((distances_AtoB > inner),(distances_AtoB <= outer))
         for i in range(N_A):
@@ -338,7 +329,6 @@ def crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum):
             contributions[i,annulus] = contributions[i,annulus] + contribution
         crossPCF_AtoB[annulus] = crossPCF_AtoB[annulus] / N_A
     return PCF_radii_lower, crossPCF_AtoB, contributions
-
 
 def changeSomeElements(matrix):
     
@@ -384,3 +374,13 @@ def changeSomeElements(matrix):
         matrix[rows[1],cols[0]] = new_c
         matrix[rows[1],cols[1]] = new_d
         return matrix,True
+
+
+
+
+
+
+
+
+
+

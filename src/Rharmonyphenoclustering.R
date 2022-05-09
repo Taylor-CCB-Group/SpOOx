@@ -20,22 +20,20 @@ suppressPackageStartupMessages({
 
 # parsing the arguments
 option_list = list(
-    make_option(c("--infile"), type="character", default=NULL, help="File that contains the sce object for which to do the integration and clustering", metavar="character"),
-    make_option(c("--outdir"), type="character", default=NULL,  help="output directory", metavar="character"),
-    make_option(c("--analysisName"), type="character", default=NULL, help="the name of this analysis", metavar="character"),
-
-    make_option(c("--datatransf"), type="character", default="exprs",  help="Assay of the SCE on which to be running Harmony. (default=exprs)"),
-    make_option(c("--var"), type="character", default=NULL, help="The var from the data that will be removed with Harmony. It needs to be a column in colData."),
+    make_option(c("--infile"), type="character", help="File that contains the sce object for which to do the integration and clustering", metavar="character"),
+    make_option(c("--outdir"), type="character",  help="output directory", metavar="character"),
+    make_option(c("--analysisName"), type="character", default="test", help="the name of this analysis", metavar="character"),
+    make_option(c("--datatransf"), type="character", default="scaledtrim",  help="Assay of the SCE on which to be running Harmony. (default=exprs)"),
+    make_option(c("--var"), type="character", default="sample_name", help="The var from the data that will be removed with Harmony. It needs to be a column in colData."),
     make_option(c("--pca"), type="logical", default="TRUE", help="Run harmony on the PCA reduction. (default=T)"),
-    make_option(c("--npcs"), type="integer", default=20, help="RIf doing PCA on input matrix, number of PCs to compute. (default=20)"),
+    make_option(c("--npcs"), type="integer", default=10, help="RIf doing PCA on input matrix, number of PCs to compute. (default=20)"),
     make_option(c("--annot"), type="character", default=NULL,  help="File with annotations to be loaded for the plots.Can include more than one option with comma separated files (will be added as annotation2, etc). (optional)", metavar="character"),
     make_option(c("--k"), type="integer", default=30,  help="k parameter for Rphenograph."),
-
-    make_option(c("--save_sceobj"), type="logical", action="store_true", help="Include flag to save the SingleCellExperiment object as well."),
+    make_option(c("--save_sceobj"), type="logical", default = FALSE ,action="store_true", help="Include flag to save the SingleCellExperiment object as well."),
     make_option(c("--draw_charts"), type="logical", default=FALSE ,help="draw charts - default is true")
 
 ); 
- 
+
 opt_parser <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
 
@@ -43,7 +41,6 @@ if (any(is.null(opt$infile),is.null(opt$var),is.null(opt$outdir),is.null(opt$ana
   print_help(opt_parser)
   stop("Arguments missing.n", call.=FALSE)
 }
-
 
 
 ###########################
