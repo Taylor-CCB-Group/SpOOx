@@ -96,7 +96,8 @@ python mergecelldata.py
 ```
 - `--indir` initial directory level (default=signalextraction)
   
-- `--excludeList` list of dirs to exclude as a pattern if you have bad samples (*for example e.g. --excludeList AA_SAMPLE_11_ROI_1 BB_SAMPLE_4_ROI_12)
+- `--excludeList` list of dirs to exclude as a pattern if you have bad samples
+   - (for example e.g. --excludeList AA_SAMPLE_11_ROI_1 BB_SAMPLE_4_ROI_12)
   
 - `--infile` name of the files to be merged (default=cellData.tab)
   
@@ -108,7 +109,7 @@ python mergecelldata.py
   
 #### Step ii)  Create a metadata file.
 
-For the clustering step (see below), a metadata file describing all the samples contained in the aboved merged data file can be created using the script, make_metadata.py
+(optional) For the clustering step (see below), a metadata file describing all the samples contained in the aboved merged data file can be created using the script, make_metadata.py
 
 ```
 python make_metadata.py
