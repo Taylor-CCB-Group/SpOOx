@@ -94,9 +94,9 @@ This file can also filter the data prior to merging using the --minarea and --ma
 ```
 python mergecelldata.py
 ```
-- `--indir` initial directory level
+- `--indir` initial directory level (default=signalextraction)
   
-- `--excludeList` list of dirs to exclude as a pattern if you have bad samples (*for example e.g. --excludeList SAMPLE_11/ROI_1/ SAMPLE_10/ SAMPLE_17/*)
+- `--excludeList` list of dirs to exclude as a pattern if you have bad samples (*for example e.g. --excludeList AA_SAMPLE_11_ROI_1 BB_SAMPLE_4_ROI_12)
   
 - `--infile` name of the files to be merged (default=cellData.tab)
   
