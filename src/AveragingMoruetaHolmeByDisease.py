@@ -40,9 +40,17 @@ def main():
     )
     parser.add_argument(
             '-s', '--save_pickle', 
-            help = 'json config',
+            help = 'save the pickle file',
             required = False,
             default=False
+    )
+
+    parser.add_argument(
+            '-f', '--fdr', 
+            help = 'fdr',
+            required = False,
+            type=float,
+            default=0.05
     )
 
     args = parser.parse_args()
@@ -56,6 +64,9 @@ def main():
     conf = json.loads(open(args.config).read())
     diseases= conf["disease_state"]
     diseasesToAverage = list(diseases.keys())
+
+    if not os.path.exists(pathToWriteOutput):
+        os.mkdir(pathToWriteOutput)
     
 
     clf= open(cluster_annotations).read().split("\n")
@@ -83,7 +94,10 @@ def main():
             if arr[0]=="HEALTHY":
                 arr[0]="HC"
             f= arr[0]+"_"+roi+"_"+arr[-2]+"_"+arr[-1]+"_MoruetaHolme_data.p"
-            with open(os.path.join(pathToData, f),"rb") as fid:
+            fl = os.path.join(pathToData, f)
+            if not os.path.exists(fl):
+                continue
+            with open(fl,"rb") as fid:
                 result = pickle.load(fid)
 
             O = result['O']
@@ -135,6 +149,7 @@ def main():
         plt.figure(figsize=(12,12))
         plt.imshow(C_O_plot,cmap='RdBu_r',vmin=-1,vmax=1)
         plt.colorbar()
+        plt.tick_params(axis='both', which='major', labelsize=11)
         plt.xticks(ticks=np.arange(0,nSpecies),labels=clusterNames,rotation=90)
         plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames)
         plt.savefig(stub + '_PartialCorrelation.png',bbox_inches='tight')
@@ -159,6 +174,7 @@ def main():
         lim = np.ceil(max(np.abs(np.nanmin(SES)),np.nanmax(SES)))
         plt.imshow(SES,cmap='RdBu_r',vmin=-lim,vmax=lim)
         plt.colorbar()
+        plt.tick_params(axis='both', which='major', labelsize=11)
         plt.xticks(ticks=np.arange(0,nSpecies),labels=clusterNames,rotation=90)
         plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames)
         plt.savefig(stub + '_StandardEffectSize.png',bbox_inches='tight')
@@ -167,35 +183,67 @@ def main():
         # STEP SIX: 
         # Calculate a 2-tailed p-value for each pair of species
         p = np.zeros(shape=(nSpecies,nSpecies))
+        p_list = []
+        p_index = []
         for i in range(nSpecies):
             for j in range(nSpecies):
                 p[i,j] = sum(np.abs(C_O[i,j]) < np.abs(C_ns[:,i,j]))/np.shape(C_ns)[0]
+                if j < i:
+                    p_list.append(p[i,j])
+                    p_index.append([i,j])
         
         # Now do Benjamini-Hochberg correction
         
-        alpha = 0.05
+        alpha = args.fdr
         
-        rejected, p_star = fdrcorrection(p.reshape((1,-1))[0], alpha, method='indep')
+        #rejected, p_star = fdrcorrection(p.reshape((1,-1))[0], alpha, method='indep')
+        rejected, p_star = fdrcorrection(p_list, alpha, method='indep')
+        #rejected = rejected.reshape(nSpecies,nSpecies)
+        #p_star = p_star.reshape(nSpecies,nSpecies)
         
-        rejected = rejected.reshape(nSpecies,nSpecies)
-        p_star = p_star.reshape(nSpecies,nSpecies)
-        
-        A = np.zeros(shape=(nSpecies,nSpecies))
+        '''A = np.zeros(shape=(nSpecies,nSpecies))
         for i in range(nSpecies):
             for j in range(nSpecies):
                 if p_star[i,j] < alpha:
                     A[i,j] = SES[i,j]
                 else:
                     A[i,j] = np.nan
+        '''
+        A = np.zeros(shape=(nSpecies,nSpecies))
+        A[:,:] = np.nan # Initialise A with Nans
+        for k in range(len(p_index)):
+            if p_star[k] < alpha:
+                i = p_index[k][0]
+                j = p_index[k][1]
+                A[i,j] = SES[i,j]
         
+        # create other half of matrix
+        # simplest A= A + A.T (but adding value to NaN is NaN)
+        B=A.T
+        na= np.isnan(A)
+        nb = np.isnan(B)
+        A[na]=0
+        B[nb]=0
+        A +=B
+        na &= nb
+        A[na] = np.nan
 
-        
+
+        #write out txt file
+        o = open(stub+"_adj_matrix_{}.txt".format(alpha),"w")
+        o.write("\t"+"\t".join(clusterNames)+"\n")
+        for i,n in enumerate(clusterNames):
+            line = [str(x) for x in A[i]]
+            o.write(n+"\t"+"\t".join(line)+"\n")
+        o.close()
+
         plt.figure(figsize=(12,12))
         plt.imshow(A,cmap='RdBu_r',vmin=-15,vmax=15)
         plt.xticks(ticks=np.arange(0,nSpecies),labels=clusterNames,rotation=90)
         plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames)
         plt.colorbar()
-        plt.savefig(stub + '_AdjacencyMatrix.png',bbox_inches='tight')
+        plt.tick_params(axis='both', which='major', labelsize=11)
+        plt.savefig(stub + '_AdjacencyMatrix_{}.png'.format(alpha),bbox_inches='tight')
         
         plt.close('all')
         

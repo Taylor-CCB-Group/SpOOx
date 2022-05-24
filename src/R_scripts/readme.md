@@ -6,12 +6,12 @@ The script carries out two types of clustering based on the specified markers. F
 
 The input to the script is a single tab delimited table specified in the  _--input_file_. The markers to use can either be specified in the _--panel_file_ or in _--metadata_cols_.
 
-The output directory is specified in _--output_dir_ (which defaults to the curent working directory). The output file will be a tab delimited table with the clusters and dimension reduction (clusters.txt)  and if _--save_sceobj_ is true a clusterd.RData file as well.
+The output directory is specified in _--output_dir_ (which defaults to the current working directory). The output file will be a tab delimited table with the clusters and dimension reduction (clusters.txt)  and if _--save_sceobj_ is true an RData file will be saved as well.
 
 
 ### Examples
 
-To run from the ouput of the pipeline with default settings:-
+To run from the cellData.tan file produced by _mergecelldata.py_ with default settings:-
 
     Rscript Rphenoclustering_R \
         --input_file /path/to/cellData.tab \
@@ -27,7 +27,7 @@ To run from a table containing only cellID, sample_name and marker columns and o
         --create_sample_columns FALSE \
         --output_dir /path/to/output \
 
-Using a table where the first 10 columns are metadata and the rest are markers, using the batch column to normalise:-
+Using a table where the first 10 columns are metadata and the rest are markers, using the batch column to normalize:-
 
      Rscript Rphenoclustering_R \
         --input_file /path/to/cellData.tab \
@@ -42,13 +42,14 @@ Using a table where the first 10 columns are metadata and the rest are markers, 
 
 * **--q** The quantile used for trimming/scaling - default is 0.01
 
-* **--datatransf** The data transformation that will be performed on the markers before Rphenograph clustering. Options are none, scaled, scaledtrim . The default is scaledtrim. No tramsformation is applied in the Harmnoy step as it has its own scaling function.
+* **--datatransf** The data transformation that will be performed on the markers before Rphenograph clustering. Options are none, scaled, scaledtrim . The default is scaledtrim. No transformation is applied in the Harmony step as it has its own scaling function.
 
 * **--panel_file** The path to the panel file which should have at least two columns, _marker_name_ with the name of the marker and _clustering_ which should contain a 1 if to be used in the clustering e.g
 
         marker_name   clustering
         CD14          1
         C27           0
+        
    The default is NULL, in which case the --metadata_cols argument specifies which columns to use as markers
 
 
@@ -66,6 +67,6 @@ Using a table where the first 10 columns are metadata and the rest are markers, 
 
 * **--npcs** The number of PCs that harmony generates and are used in the subsequent phenograph step. The default is 20. However, if _npcs_ is greater or equal to the number of markers it will be reduced to the number of markers -1
 
-* **--set_seed** The seed to be used in the clustering/dimension reductions. Using the same seed with the same input data and parameters should produce excctly the same results. The dedault is NULL in which case a random seed will be used.
+* **--set_seed** The seed to be used in the clustering/dimension reductions. Using the same seed with the same input data and parameters should produce exactly the same results. The default is NULL in which case a random seed will be used.
 
 * **--group_pcas** if not _none_ then the marker data will be collapsed according to this column and PCA performed. A file pca.txt will be written to the output folder with 4 PCs for each unique value in the specified column. The default value is _sample_id_

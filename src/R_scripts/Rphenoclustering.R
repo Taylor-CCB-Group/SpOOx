@@ -23,18 +23,18 @@ option_list <- list(
 
     make_option(
        c("--input_file"), type = "character",
-        default = "/t1-data/project/covidhyperion/sergeant/scripts/HYPETMFPV/cellData.tab",#/t1-data/project/covidhyperion/sergeant/scripts/R_scripts/test_data/cellData.tab",
+        default = "/t1-data/project/BM_hyperion/shared/data/panel1/signalextraction/mergecellData.tab",#/t1-data/project/covidhyperion/sergeant/scripts/R_scripts/test_data/cellData.tab",
       help = "the input file",
         metavar = "character"
     ),
     make_option(
        c("--output_dir"), type = "character",
-        default = "/t1-data/project/covidhyperion/sergeant/scripts/HYPETMFPV/markers_panel1.tsv", help = "the output directory",
+        default = "/t1-data/project/covidhyperion/sergeant/scripts/HYPETMFPV", help = "the output directory",
         metavar = "character"
     ),
    make_option(
       c("--panel_file"), type = "character",
-      default =  "/t1-data/project/BM_hyperion/shared/data/panel1/config/markers_panel1.tsv", 
+      default =  "/t1-data/project/BM_hyperion/shared/data/panel1/markers_panel_nobetaActin.tsv", 
       help = "Config panel with columns marker_name and clustering
          defining markers to use for clustering.",
       metavar = "character"

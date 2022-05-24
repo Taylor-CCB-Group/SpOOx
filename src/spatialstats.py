@@ -72,6 +72,15 @@ def main():
                 required = False
         )
 
+        parser.add_argument(
+                '-q', '--quadrat_size', 
+                default=100,
+                required = False,
+                type=int
+        )
+
+   
+
 
 
 
@@ -130,7 +139,7 @@ def main():
             #Calling the functions.
             functions = [x.casefold() for x in functions]
             if 'quadratcounts' in functions or 'quadratcelldistributions' in functions or 'morueta-holme' in functions:
-                    r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringToUse)
+                    r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringToUse,args.quadrat_size)
     
             for i in functions:
                     #get directory according to function and create the dirctory
@@ -249,10 +258,9 @@ def contourPlots(ds, df_annotations, clusteringToUse, clusterNames):
         print("Contour plots completed.")
 
 
-def quadratMethods(ds, df_annotations, clusteringToUse):
+def quadratMethods(ds, df_annotations, clusteringToUse, quadratEdgeLength=100):
         #PART 6 - Time to implement some quadrat methods
         
-        quadratEdgeLength = 100 # microns
         x = np.arange(0,ds.domainX,quadratEdgeLength)
         y = np.arange(0,ds.domainY,quadratEdgeLength)
         x = np.append(x,ds.domainX)
