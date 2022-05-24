@@ -36,11 +36,11 @@ def AppendFiles(fileList, outputFile, minAreaVal, maxAreaVal):
 
 
 parser = argparse.ArgumentParser(description='''Generate merged cellData.tab files so can run analyses at the source/sample level based on the files one level below
-''', formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('--indir', dest='indir',
+''', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--indir', dest='indir', default = "signalextraction",
                     help='initial directory level')
 parser.add_argument('--excludeList', dest='excludeList', nargs='+',
-                    help='list of dirs to exclude as a pattern if you have bad samples for example e.g. --excludeList SAMPLE_11/ROI_1/ SAMPLE_10/ SAMPLE_17/')
+                    help='list of dirs to exclude as a pattern if you have bad samples for example e.g. --excludeList AA_SAMPLE_11_ROI_1 BB_SAMPLE_4_ROI_12')
 parser.add_argument('--infile', dest='infile', default = "cellData.tab",
                     help='the file it will look to merge')		
 parser.add_argument('--outfile', dest='outfile', default = "mergecellData.tab",
@@ -50,17 +50,7 @@ parser.add_argument('--minarea', dest='minarea', default = "50", nargs='?', cons
 parser.add_argument('--maxarea', dest='maxarea', default = "300", nargs='?', const=1, type=int,
                     help='maximum value for area of each cell')		
 
-if len(sys.argv)==1:
-    parser.print_help(sys.stderr)
-    sys.exit(1)		   
-
 args = parser.parse_args()
-
-#  examples:
-#indir = "/full/path/to/project/signalextraction/"
-#infile = "cellData.tab"
-#excludeList = ["SAMPLE_11/", "SAMPLE_10/", "SAMPLE_17/"]
-#includeList="SAMPLE_1/  SAMPLE_10/  SAMPLE_11/  SAMPLE_16/  SAMPLE_17/"
 
 
 infile=args.infile
