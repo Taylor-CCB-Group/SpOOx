@@ -53,6 +53,39 @@ class dataset_filterSampleID:
         self.domainX = ceil(np.max(self.df['x'])/50.0)*50
         self.domainY = ceil(np.max(self.df['y'])/50.0)*50
 
+def getPCFContributionsWithinGrid(contributions, xmax, ymax, points):
+    # Helper function to generate 95% CI around a PCF
+    # Following Loh (2008 - https://web.njit.edu/~loh/Papers/ApJ.Loh.2008a.pdf)
+    contributions = np.asarray(contributions)
+    
+    # Split domain into equal rectangles - fix at 100 microns square
+    #TODO Make this length scale a parameter - with this fixed, method will become unsuitable 
+    # for domains smaller than around 300um x 300um
+    rectangleWidthX = 100
+    rectangleWidthY = 100
+    
+    xRect = np.arange(0,xmax+1,rectangleWidthX)
+    yRect = np.arange(0,ymax+1,rectangleWidthY)
+    
+    nRectanglesX = np.shape(xRect)[0]-1
+    nRectanglesY = np.shape(yRect)[0]-1
+    
+    
+    # Identify the rectangle that each point belongs to
+    rectID = 0
+    rectNs = np.zeros(nRectanglesX*nRectanglesY)
+    rectContributions = np.zeros((nRectanglesX*nRectanglesY,np.shape(contributions)[1]))
+    for i in range(nRectanglesX):
+        for j in range(nRectanglesY):
+            accept = (points[:,0] > xRect[i]) & (points[:,0] <= xRect[i+1])
+            accept = accept & (points[:,1] > yRect[j]) & (points[:,1] <= yRect[j+1])
+            if sum(accept) > 0:
+                rectContributions[rectID,:] = np.sum(contributions[accept,:],axis=0)
+                rectNs[rectID] = sum(accept)
+            rectID = rectID + 1
+    nRectangles = nRectanglesX*nRectanglesY
+    return nRectangles, rectContributions, rectNs
+
 
 def plotPCFWithBootstrappedConfidenceInterval(ax, radii, g, contributions, points, xmax, ymax, label=None, includeZero=True):
     # Helper function to plot a PCF with 95% CI
@@ -61,12 +94,17 @@ def plotPCFWithBootstrappedConfidenceInterval(ax, radii, g, contributions, point
     contributions = np.asarray(contributions)
     numContribs = np.shape(contributions)[0]
 
-    # Split domain into equal rectangles
-    nRectanglesX = 20
-    nRectanglesY = 20
-    xRect = np.linspace(0,xmax,nRectanglesX+1)
-    yRect = np.linspace(0,ymax,nRectanglesY+1)
+    # Split domain into equal rectangles - fix at 100 microns square
+    #TODO Make this length scale a parameter - with this fixed, method will become unsuitable 
+    # for domains smaller than around 300um x 300um
+    rectangleWidthX = 100
+    rectangleWidthY = 100
 
+    xRect = np.arange(0,xmax+1,rectangleWidthX)
+    yRect = np.arange(0,ymax+1,rectangleWidthY)
+    
+    nRectanglesX = np.shape(xRect)[0]-1
+    nRectanglesY = np.shape(yRect)[0]-1
 
     # Identify the rectangle that each point belongs to
     # rectangleIDs = np.zeros(shape=(len(contributions)))
