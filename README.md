@@ -50,7 +50,10 @@ Similarly, in each row in the output data table will get a unique id:
 
 \<condition\>, "sample", \<sampleId\>, "ROI", \<roi_id\>, "CELL", \<cell_id\>
 
-
+For example:
+```
+COVID_sample_1_ROI_3_ROI_1.tiff
+```
 
 ### Pipeline commands:
 A basic Ruffus function 'show' can be used to describe the steps that make up the pipeline:
