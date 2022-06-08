@@ -29,15 +29,28 @@ mkdir mcd
 ```
 Copy (or symlink) .mcd files to mcd/ dir. 
 
-Each .mcd file should be in its own, named dir within the mcd dir. The file and dir names are constructed using three elements (\<sampleName\>, "sample", \<sampleId\>) separated by underscores. For example:
+Each .mcd file should be in its own, named dir within the mcd dir. SpOOx and MDV relies on a specific naming scheme to process and parse files during the analysis. The file and dir names are constructed using three elements (\<condition\>, "sample", \<sampleId\>) separated by underscores. For example:
 ```
-<your working dir>/mcd/AB_sample_1/AB_sample_1.mcd
-<your working dir>/mcd/AB_sample_2/AB_sample_2.mcd
-<your working dir>/mcd/CD_sample_1/CD_sample_1.mcd
-<your working dir>/mcd/CD_sample_2/CD_sample_2.mcd
-<your working dir>/mcd/CD_sample_3/CD_sample_3.mcd
-<your working dir>/mcd/EF_sample_1/EF_sample_1.mcd
+<your working dir>/mcd/COVID_sample_1/COVID_sample_1.mcd
+<your working dir>/mcd/COVID_sample_2/COVID_sample_2.mcd
+<your working dir>/mcd/INFLUENZA_sample_1/INFLUENZA_sample_1.mcd
+<your working dir>/mcd/INFLUENZA_sample_2/INFLUENZA_sample_2.mcd
+<your working dir>/mcd/INFLUENZA_sample_3/INFLUENZA_sample_3.mcd
+<your working dir>/mcd/CONTROL_sample_1/CONTROL_sample_1.mcd
 ```
+Subsequently, each region of interest (ROI) will have files named using this scheme:
+
+\<condition\>, "sample", \<sampleId\>, "ROI", \<roi_id\>
+
+For example:
+```
+COVID_sample_1_ROI_3.tiff
+```
+Similarly, in each row in the output data table will get a unique id:
+
+\<condition\>, "sample", \<sampleId\>, "ROI", \<roi_id\>, "CELL", \<cell_id\>
+
+
 
 ### Pipeline commands:
 A basic Ruffus function 'show' can be used to describe the steps that make up the pipeline:
