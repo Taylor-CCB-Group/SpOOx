@@ -1,0 +1,30 @@
+name: hyperion
+
+channels:
+- bioconda
+- conda-forge
+- defaults
+
+dependencies:
+- scikit-image
+- opencv
+- tifffile
+- numpy
+- scipy
+- statsmodels
+- pandas
+- pandas-profiling
+- matplotlib
+- seaborn
+- ruffus
+- cgatcore
+- scanpy
+- anndata
+- pathlib
+- pip
+- pip: 
+  - multipagetiff
+  - imctools
+  - deepcell
+  - zegami-cli
+
