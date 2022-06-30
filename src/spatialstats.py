@@ -266,7 +266,6 @@ def quadratMethods(ds, df_annotations, clusteringToUse, quadratEdgeLength=100):
         x = np.append(x,ds.domainX)
         y = np.append(y,ds.domainY)
 
-        xv, yv = np.meshgrid(x,y)
         nx = len(x)
         ny = len(y)
         nQuadrats = (nx-1)*(ny-1)
