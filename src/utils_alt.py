@@ -181,7 +181,7 @@ def CalculateBootstrapAroundCSRForPValues(N_A, N_B, domainX, domainY, dr_mum, ma
 
         # Shape (N_A, N_B)
         distances_AtoB = cdist(points_A, points_B, metric='euclidean')
-        radii, g, contributions = crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum)
+        radii, g, contributions = crossPCF(distances_AtoB, areas_A, density_B, dr_mum, maxR_mum)
         bootstrapSamples[boot, :] = np.transpose(g)
 
     # # Plot halos
@@ -372,8 +372,8 @@ def changeSomeElements(matrix):
     
     # Select elements of a submatrix (a b; c d) such that elements in the same row/column are from the same row/column in matrix
     n, m = np.shape(matrix)
-    rows = np.random.choice(range(n), 2, replace=False)
-    cols = np.random.choice(range(m), 2, replace=False)
+    rows = random.sample(range(n), 2)
+    cols = random.sample(range(m), 2)
     a = matrix[rows[0],cols[0]]
     b = matrix[rows[0],cols[1]]
     c = matrix[rows[1],cols[0]]
