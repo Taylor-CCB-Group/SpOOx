@@ -578,7 +578,7 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                             areas_B = areas[clusterB]
                             
                             distances_AtoB = cdist(p_A, p_B, metric='euclidean')
-                            radii, g, contributions = crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum)
+                            radii, g, contributions = crossPCF(distances_AtoB, areas_A, density_B, dr_mum, maxR_mum)
                             gs[a, b, :] = g.transpose()[0]
                     
                             plt.figure(figsize=(12,9))
