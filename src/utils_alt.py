@@ -344,7 +344,7 @@ def getAnnulusAreasAroundPoints(points_i, dr, maxR, domainX, domainY):
 
 
 
-def crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum):
+def crossPCF(distances_AtoB, areas_A, density_B, dr_mum, maxR_mum):
     N_A = np.shape(distances_AtoB)[0]
 
     PCF_radii_lower = np.arange(0, maxR_mum, dr_mum)
