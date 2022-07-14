@@ -65,7 +65,7 @@ python hyperion_pipeline.py show
 [imctools](https://github.com/BodenmillerGroup/imctools) works on folders not files, but folders are poor for tracking within a pipeline as their modicfication time is updated on access. To mitigate this we use a hidden dummy file (.ruffus) which is added to each directory of interest in the mcd dir for tracking purposes.
 
 ```
-python hyperion_pipeline.py mark_input_folders
+python hyperion_pipeline.py make mark_input_folders
 ```
 ====================================
 
