@@ -24,8 +24,8 @@ dependencies:
 - pathlib=1.0.1
 - pip=21.3.1
 - pip: 
-  - multipagetiff=3.0.2
-  - imctools=2.1.8
-  - deepcell=0.11.0
-  - zegami-cli=1.5.1
+  - multipagetiff
+  - imctools
+  - deepcell
+  - zegami-cli
 
