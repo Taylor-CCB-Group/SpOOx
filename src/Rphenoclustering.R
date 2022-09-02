@@ -43,7 +43,7 @@ option_list = list(
     make_option(c("--save_sceobj"), type="logical", default= TRUE ,action="store_true", help="Include flag to save the SingleCellExperiment object as well."),
     make_option(c("--out_dir"), type="character",default="/project/taylorlab/sergeant/rtest", help="the output directory - default is to calculate it from the input.", metavar="character"),
     make_option(c("--draw_charts"), type="logical", default=FALSE ,help="draw charts - default is true"),
-    make_option(c("--use_subdirectory"), type="logical", default=TRUE ,help="If true  celldata.tab should e in signal extraction subdirectory in the specified path. default is FASLE")
+    make_option(c("--use_subdirectory"), type="logical", default=FALSE ,help="If true  celldata.tab should e in signal extraction subdirectory in the specified path. default is FASLE")
 
 ); 
  
