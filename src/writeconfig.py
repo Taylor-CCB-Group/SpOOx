@@ -45,11 +45,12 @@ def GetAllFiles(path):
 
 markerSet = set(GetAllFiles(args.indir))
 markerList = list((sorted(markerSet))) 
-
-df = pd.DataFrame(columns = columns)
+# make empty dataframe
+df = pd.DataFrame(columns = columns, dtype=object)
 df.style.hide_index()
 df['marker_name'] = pd.Series(markerList)
 df.fillna(0, inplace=True)
+print("Marker table looks like the following:")
 print(df)
 df.to_csv(args.outfile,sep="\t",index=False)
 
