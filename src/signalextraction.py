@@ -382,9 +382,10 @@ if verbose:
 #df.to_csv(pathToSaveAnalysis + analysisName + '_cellData.txt', index=False, sep='\t')
 df.to_csv(pathToSaveAnalysis + statisticsTable, index=False, sep='\t')
 
-# web page output profile
-profile = ProfileReport(df, title=analysisName + " Report", minimal=True, progress_bar=False)
-profile.to_file(pathToSaveAnalysis+"summarystats.html")
+#web page output profile
+#for debugging but causes an error with the versions of pandas (1.4.3) / numpy (1.23.1) 
+#profile = ProfileReport(df, title=analysisName + " Report", minimal=True, progress_bar=False)
+#profile.to_file(pathToSaveAnalysis+"summarystats.html")
 
 # logile to go in everyoutput directory
 logFile = os.path.join(pathToSaveAnalysis,"README.txt")
