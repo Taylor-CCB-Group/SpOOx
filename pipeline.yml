@@ -1,4 +1,7 @@
-batch_queue: <queue_name>
+cluster:
+  queue_manager: slurm
+  queue: batch
+  
 scripts_dir: SpOOx/src
 
 hyperion_dir: mcd
