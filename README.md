@@ -162,7 +162,13 @@ Rscript Rphenoclustering.R \
 ```
 ====================================
 
-### 2. Spatial stats
+### 2. Load data in Multi Spatial Viewier
+
+See the instructions here
+'''
+https://github.com/Taylor-CCB-Group/SpOOx/tree/main/src/MLVUpload
+'''
+### 3. Spatial stats
 
 \# [ not tested ] something like.....
 ```
