@@ -162,7 +162,7 @@ Rscript Rphenoclustering.R \
 ```
 ====================================
 
-### 2. Load data in Multi Spatial Viewier
+### 2. Load data in Multi Spatial Viewer
 
 See the instructions here :
 
