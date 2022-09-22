@@ -1,11 +1,11 @@
 ## mlvupload.py
 
-The script takes a single tab delimited file pf all cells and markers, as well as other metadata and uploads it MLV.  The only argument required is the path to the yaml file which contains all the arguments required. A token, obtained from the MLV website is required for authentication (see below)
+The script takes a single tab delimited file of all cells and markers, as well as other metadata and uploads it to MLV.  The only argument required is the path to the yaml file which contains all the arguments required. A token, obtained from the MLV website is required for authentication (see below)
 
 
 ### Basics
 
-To upload data from the pipeline, a lot of parameters in the default yaml file need not br change. However, the following parameters require the appropriate values.
+To upload data from the pipeline, a lot of parameters in the default yaml can remain unchanged. However, the following parameters require the appropriate values.
 
 
 * _name_ - the name of the project

@@ -16,6 +16,7 @@ suppressPackageStartupMessages({
   	require(cowplot, quietly=T)
   	require(gridExtra, quietly=T)
   	require(ggplot2, quietly=T)
+    
 })
 
 # parsing the arguments
@@ -30,7 +31,7 @@ option_list = list(
     make_option(c("--annot"), type="character", default=NULL,  help="File with annotations to be loaded for the plots.Can include more than one option with comma separated files (will be added as annotation2, etc). (optional)", metavar="character"),
     make_option(c("--k"), type="integer", default=30,  help="k parameter for Rphenograph."),
     make_option(c("--save_sceobj"), type="logical", default = FALSE ,action="store_true", help="Include flag to save the SingleCellExperiment object as well."),
-    make_option(c("--draw_charts"), type="logical", default=FALSE ,help="draw charts - default is true")
+   
 
 ); 
 

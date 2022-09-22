@@ -1,4 +1,4 @@
-## Rphenoclustering.R
+## RPhenoHarmonyCluster.R
 
 ### Basics
 
@@ -7,13 +7,15 @@ The script carries out two types of clustering based on the specified markers. F
 The input to the script is a single tab delimited table specified in the  _--input_file_. The markers to use can either be specified in the _--panel_file_ or in _--metadata_cols_.
 
 The output directory is specified in _--output_dir_ (which defaults to the current working directory). The output file will be a tab delimited table with the clusters and dimension reduction (clusters.txt)  and if _--save_sceobj_ is true an RData file will be saved as well.
+If specified PCAs will be written to the pca.txt file. A number of charts are also produced
 
+**N.B.** The fist time the script is run, an R package that is not present in Conda will be downloaded and installed, which can take a few minutes
 
 ### Examples
 
 To run from the cellData.tan file produced by _mergecelldata.py_ with default settings:-
 
-    Rscript Rphenoclustering_R \
+    Rscript RPhenoHarmonyCluster.R \
         --input_file /path/to/cellData.tab \
         --panel_file /path/to/panel.tsv \
         --output_dir /path/to/output \
@@ -21,7 +23,7 @@ To run from the cellData.tan file produced by _mergecelldata.py_ with default se
 
 To run from a table containing only cellID, sample_name and marker columns and output only cellID and cluster information :-
 
-    Rscript Rphenoclustering_R \
+    Rscript RPhenoHarmonyCluster_R \
         --input_file /path/to/cellData.tab \
         --output_clusters_only TRUE \
         --create_sample_columns FALSE \
@@ -29,7 +31,7 @@ To run from a table containing only cellID, sample_name and marker columns and o
 
 Using a table where the first 10 columns are metadata and the rest are markers, using the batch column to normalize:-
 
-     Rscript Rphenoclustering_R \
+     Rscript RPhenoHarmonyCluster_R \
         --input_file /path/to/cellData.tab \
         --metadata_cols 10 \
         --create_sample_columns FALSE \

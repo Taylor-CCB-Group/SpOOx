@@ -24,6 +24,18 @@ dependencies:
 - pathlib=1.0.1
 - pip=21.3.1
 - openssl<3
+- r-optparse
+- r-ggplot2
+- r-rtsne
+- r-uwot
+- bioconductor-complexheatmap
+- bioconductor-singlecellexperiment
+- r-harmony
+- r-ggridges
+- r-rcolorbrewer
+- r-remotes
+- r-data.table
+
 - pip: 
   - multipagetiff
   - imctools

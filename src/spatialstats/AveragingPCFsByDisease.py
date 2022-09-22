@@ -1,15 +1,14 @@
-from matplotlib import path
+
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import sys
-from utils_alt import dataset,dataset_filterSampleID, crossPCF, getAnnulusAreasAroundPoints, plotPCFWithBootstrappedConfidenceInterval, getPCFContributionsWithinGrid
+from utils_alt import  crossPCF, getAnnulusAreasAroundPoints, plotPCFWithBootstrappedConfidenceInterval, getPCFContributionsWithinGrid
 from scipy.spatial.distance import cdist
 import os
 import pickle
 import argparse
 import json
+
 sns.set_style('white')
 sns.set(font_scale=2)
 
@@ -51,12 +50,14 @@ def main():
         clusteringToUse = args.clusteringToUse
         cluster_annotations = args.cluster_annotations
         
-        pathToSaveFigures = args.output
+        pathToSaveFigures = args.output+"/"
         os.makedirs(pathToSaveFigures,exist_ok=True)
 
         clf= open(cluster_annotations).read().split("\n")
         clf= [x.strip().split("\t") for x in clf[1:]]
         mappings = {}
+        ca = []
+        cb = []
         for i in clf:
                 if len(i) <2:
                         continue
@@ -64,21 +65,21 @@ def main():
                 if len(i[0])==1:
                         clname= "cl0"+i[0]
                 mappings[i[1]]=clname
-
+                ca.append(i[1])
+                cb.append(i[1])
+        
         conf = json.loads(open(args.config).read())
 
         allClustersToCompare = []
-
-        ca= conf["clusters_to_run"]["cell_type_A"]
-        cb = conf["clusters_to_run"]["cell_type_B"]
+        if conf.get("clusters_to_run"):
+            ca= conf["clusters_to_run"]["cell_type_A"]
+            cb = conf["clusters_to_run"]["cell_type_B"]
         for a in ca:
-                for b in cb:
-                        if a==b:
-                                continue
-                        allClustersToCompare.append([mappings[a],mappings[b]])
+            for b in cb:
+                allClustersToCompare.append([mappings[a],mappings[b]])
         
-
-        diseases= conf["disease_state"]
+      
+        diseases= conf["conditions"]
         diseasesToAverage = list(diseases.keys())
         for disease in diseasesToAverage:
                 rois = diseases[disease]
@@ -135,13 +136,13 @@ def main():
                                 areas_B = areas[clusterB]
                                 
                                 distances_AtoB = cdist(p_A, p_B, metric='euclidean')
-                                radii, g, contributions = crossPCF(distances_AtoB, areas_A, areas_B, density_B, dr_mum, maxR_mum)
+                                radii, g, contributions = crossPCF(distances_AtoB, areas_A, density_B, dr_mum, maxR_mum)
                                 g = g.transpose()[0]
                                 allContributions.append(contributions)
                                 allPCFs.append(g)
                                 
                                 plt.figure(figsize=(12,9))
-                                plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
+                                plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, includeZero=True)
                                 plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
                                 
                                 print("Pair correlation function completed.")
@@ -200,8 +201,19 @@ def main():
                         plt.gca().set_xlabel('r ($\\mu$m)')
                         plt.gca().set_ylabel('$g(r)$')
                         #plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
-                        plt.savefig(pathToSaveFigures + disease + '/' + clusterNames[pair[0]] + '-to-' + clusterNames[pair[1]] + '_averageWithCI95.png')
+                        stub = pathToSaveFigures + disease + '/' + clusterNames[pair[0]] + '-to-' + clusterNames[pair[1]] + '_'
+                        plt.savefig(stub+'averageWithCI95.png')
+                        
+
                         plt.close()
+                        to_save={
+                            "radii":radii,
+                            "PCF_mean":PCF_mean_fromContributions,
+                            "PCF_min":PCF_min_fromContributions,
+                            "PCF_max":PCF_max_fromContributions
+                        }
+                        with open(pathToSaveFigures + disease + '/Pickles/' + clusterNames[pair[0]] + '-to-' + clusterNames[pair[1]] + '.p',"wb") as fid:
+                                        pickle.dump(to_save,fid)
                         
 
 

@@ -39,12 +39,12 @@ class dataset_filterSampleID:
 
         self.df = df
 
-        self.roi = df.iloc[0].ROI
+       
         self.sample = df.iloc[0].sample_id
-        self.indication = df.iloc[0].condition
+       
         #self.baseFolderPath = basePath[0]
         #self.name = '_'.join([os.path.splitext(head_tail[1])[0],"_filename"])
-        self.name = self.indication + "_" + self.sample + "_" + self.roi
+        self.name = self.sample
         self.pathToCellData = pathToData
         #self.pathToWriteOutput = self.baseFolderPath + '/spatial_stats_outputs/'
 

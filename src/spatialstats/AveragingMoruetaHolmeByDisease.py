@@ -12,8 +12,6 @@ import pickle
 import argparse
 import json
 
-from spatialstats import preprocessing
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -62,7 +60,7 @@ def main():
     cluster_annotations= args.cluster_annotations
 
     conf = json.loads(open(args.config).read())
-    diseases= conf["disease_state"]
+    diseases= conf["conditions"]
     diseasesToAverage = list(diseases.keys())
 
     if not os.path.exists(pathToWriteOutput):
@@ -74,6 +72,15 @@ def main():
   
 
     conf = json.loads(open(args.config).read())
+
+  
+    main_data={}
+    for disease in diseasesToAverage:
+        ddata={}
+        for i1,n1 in enumerate(allClusterNames):
+            for i2,n2 in enumerate(allClusterNames):
+                ddata["{}|{}".format(n1,n2)]={}
+        main_data[disease]=ddata
 
 
     for disease in diseasesToAverage:
@@ -88,12 +95,8 @@ def main():
         Os = np.empty((0,0))
         Ns = np.empty((0,0,0))
         nSpecies = len(allClusterNames)
-        for roi in diseases[disease]:
-            arr= roi.split("_")
-            #hack
-            if arr[0]=="HEALTHY":
-                arr[0]="HC"
-            f= arr[0]+"_"+roi+"_"+arr[-2]+"_"+arr[-1]+"_MoruetaHolme_data.p"
+        for roi in diseases[disease]:         
+            f= roi+"_MoruetaHolme_data.p"
             fl = os.path.join(pathToData, f)
             if not os.path.exists(fl):
                 continue
@@ -154,6 +157,18 @@ def main():
         plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames)
         plt.savefig(stub + '_PartialCorrelation.png',bbox_inches='tight')
         plt.close()
+
+        
+        o = open(stub+"_correlation_matrix.txt","w")
+
+        for i1,n1 in enumerate(clusterNames):
+            for i2,n2 in enumerate(clusterNames):
+                v= C_O_plot[i1,i2]
+                o.write("{}|{}".format(n1,n2)+"\t")
+                o.write(str(v)+"\n")              
+                main_data[disease]["{}|{}".format(n1,n2)]["PC"]=v
+
+        o.close()
         
         C_ns = []
         for i in range(np.shape(Ns)[0]):
@@ -179,6 +194,12 @@ def main():
         plt.yticks(ticks=np.arange(0,nSpecies),labels=clusterNames)
         plt.savefig(stub + '_StandardEffectSize.png',bbox_inches='tight')
         plt.close()
+
+        for i1,n1 in enumerate(clusterNames):
+            for i2,n2 in enumerate(clusterNames):   
+                    main_data[disease]["{}|{}".format(n1,n2)]["SES"]=SES[i1,i2]
+
+
         
         # STEP SIX: 
         # Calculate a 2-tailed p-value for each pair of species
@@ -188,33 +209,27 @@ def main():
         for i in range(nSpecies):
             for j in range(nSpecies):
                 p[i,j] = sum(np.abs(C_O[i,j]) < np.abs(C_ns[:,i,j]))/np.shape(C_ns)[0]
-                if j < i:
+                if j < i:     
                     p_list.append(p[i,j])
                     p_index.append([i,j])
+
         
-        # Now do Benjamini-Hochberg correction
+      
         
         alpha = args.fdr
-        
-        #rejected, p_star = fdrcorrection(p.reshape((1,-1))[0], alpha, method='indep')
         rejected, p_star = fdrcorrection(p_list, alpha, method='indep')
-        #rejected = rejected.reshape(nSpecies,nSpecies)
-        #p_star = p_star.reshape(nSpecies,nSpecies)
-        
-        '''A = np.zeros(shape=(nSpecies,nSpecies))
-        for i in range(nSpecies):
-            for j in range(nSpecies):
-                if p_star[i,j] < alpha:
-                    A[i,j] = SES[i,j]
-                else:
-                    A[i,j] = np.nan
-        '''
+       
         A = np.zeros(shape=(nSpecies,nSpecies))
         A[:,:] = np.nan # Initialise A with Nans
         for k in range(len(p_index)):
-            if p_star[k] < alpha:
-                i = p_index[k][0]
-                j = p_index[k][1]
+            i = p_index[k][0]
+            j = p_index[k][1]
+            cn1= clusterNames[i]
+            cn2 = clusterNames[j]
+            main_data[disease]["{}|{}".format(cn1,cn2)]["FDR"]=p_star[k]
+            main_data[disease]["{}|{}".format(cn2,cn1)]["FDR"]=p_star[k]
+            
+            if p_star[k] < alpha:  
                 A[i,j] = SES[i,j]
         
         # create other half of matrix
@@ -236,6 +251,23 @@ def main():
             line = [str(x) for x in A[i]]
             o.write(n+"\t"+"\t".join(line)+"\n")
         o.close()
+
+        o = open(stub+"_adj_groups_{}.txt".format(alpha),"w")
+        for i1,n in enumerate(clusterNames):
+            o.write(n+"\n")
+            for i2,n in enumerate(clusterNames):
+                v= A[i1,i2]
+                if not np.isnan(v):
+                    o.write(n+"\t"+str(v)+"\n")
+            o.write("\n")
+        o.close()
+
+
+      
+
+        
+
+
 
         plt.figure(figsize=(12,12))
         plt.imshow(A,cmap='RdBu_r',vmin=-15,vmax=15)
@@ -267,6 +299,13 @@ def main():
             saveFile = stub + '-Average_Data.p'
             with open(saveFile,"wb") as fid:
                 pickle.dump(toSave,fid)
-        
+    main_table = open(os.path.join(pathToWriteOutput,"all_data.txt"),"w")
+    main_table.write("state\tcell1\tcell2\tpartial_correlation\tstandard_effect_size\tFDR\n")
+    for d in main_data:
+        for intera in main_data[d]:
+            ns = intera.split("|")
+            info = main_data[d][intera]
+            main_table.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(d,ns[0],ns[1],info.get("PC","NA"),info.get("SES","NA"),info.get("FDR","NA")))
+    main_table.close()    
 if __name__ == "__main__":
-    main()        
+    main()

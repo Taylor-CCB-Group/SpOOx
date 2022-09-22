@@ -40,7 +40,7 @@ def main():
         ) 
         parser.add_argument(
                 '-o', '--output', 
-		help = 'Path to write all the outputs to.',
+		        help = 'Path to write all the outputs to.',
                 required = True
         ) 
         parser.add_argument(
@@ -51,6 +51,11 @@ def main():
         parser.add_argument(
                 '-cl', '--clusteringToUse', 
                 help = 'Name of column in the file specified by pathToData to use as the clustering label. Should correspond with the annotations in cluster_annotations',
+                required = True
+        )
+        parser.add_argument(
+                '-d', '--deepcellPath', 
+                help = 'the path to the deepcell folder produced from the pipeline',
                 required = True
         ) 
 
@@ -160,15 +165,7 @@ def main():
                     if i == 'paircorrelationfunction':
                             pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames)
                     if i == 'networkstatistics':
-                            # Infer path to label matrix from file structure - this is easily breakable (and hopefully easily fixable too)
-                            #pathToLabelMatrix = '/project/covidhyperion/shared/data/panel2/tree/'+ ds.df.condition + '/'+ds.df.sample_id+'/'+ds.df.ROI+'/deepcell/COVIDPANEL2_'+ds.df.sample_id+'_'+ds.df.ROI+'.tif'
-                            sub_path = str(ds.df.sample_id)
-                            sub_path = sub_path.split()[1]
-                            print("split path: ", sub_path)
-                            sub_path = sub_path.replace('_SAMPLE', '/SAMPLE')
-                            sub_path = sub_path.replace('_ROI', '/ROI')
-                            print("sub_path" + sub_path)
-                            pathToLabelMatrix = '/project/covidhyperion/shared/data/panel2/tree/' + sub_path + '/deepcell/deepcell.tif'
+                            pathToLabelMatrix = os.path.join(args.deepcellPath ,str(ds.sample),'deepcell.tif')
                             labels = skimage.io.imread(pathToLabelMatrix)
                             networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors)
                     if i == 'localclusteringheatmaps':
@@ -582,7 +579,7 @@ def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
                             gs[a, b, :] = g.transpose()[0]
                     
                             plt.figure(figsize=(12,9))
-                            plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, label=ds.indication, includeZero=True)
+                            plotPCFWithBootstrappedConfidenceInterval(plt.gca(), radii, g, contributions, p_A, ds.domainX, ds.domainY, includeZero=True)
                             plt.title(clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]])
                             plt.savefig(ds.pathToWriteOutput + ds.name + '_' + clusterNames[pair[0]] + ' to ' + clusterNames[pair[1]] + '_PCF.png',bbox_inches='tight')
                             plt.close()               
