@@ -5,7 +5,7 @@
 ## This script runs the clustering with Rphenograph.
 ##
 
-#insstakl Rphenograph as its not in conda
+#insstall Rphenograph as its not in conda
 if (!requireNamespace("Rphenograph", quietly = TRUE)) remotes::install_github("JinmiaoChenLab/Rphenograph")
 
 

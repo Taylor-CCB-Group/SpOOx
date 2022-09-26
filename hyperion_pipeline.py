@@ -76,24 +76,28 @@ def signal_extraction (infile, outfile):
                 %(signal_extraction_options)s'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
-# make_metadata
+
+
+
 @follows(signal_extraction)
-@originate("metadata.tsv")
-def make_metadata(outfile):
+@originate("signalextraction/mergecellData.tab")
+def mergecelldata(outfile):
     statement = '''python %(scripts_dir)s/make_metadata.py'''
     P.run(statement, without_cluster=True)
+    statement = '''python %(scripts_dir)s/mergecelldata.py %(mergecelldata_options)s'''
+    P.run(statement, without_cluster=True)
+    
 
 # phenoclustering
-@follows(make_metadata)
-@originate("clustering/phenocluster_sceobj_k30.RData")
-def phenocluster(outfile):
-    statement = '''Rscript Rphenoclustering.R
+@follows(mergecelldata)
+@originate("clustering/clusters.txt")
+def phenoharmonycluster(outfile):
+    statement = '''Rscript %(scripts_dir)s/R_scripts/RPhenoHarmonyCluster.R
                 --panel_file %(marker_file)s
-                --metadata_file metadata.tsv
-                --analysisName phenocluster
-                --out_dir clustering
+                --input_file signalextraction/mergecellData.tab
+                --output_dir clustering
                 %(phenograph_options)s'''
-    P.run(statement, without_cluster=True, job_condaenv="hyperion_R")
+    P.run(statement,job_queue=PARAMS["batch_queue"])
 
 
 

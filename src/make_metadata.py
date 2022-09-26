@@ -21,7 +21,7 @@ outfile=args.outfile
 
 cwd = os.getcwd()
 
-filedata = "sample_id\tsample_name\tcondition\tROI\tpath\t\region_width\tregion_height\n"
+filedata = "sample_id\tsample_name\tcondition\tROI\tpath\tregion_width\tregion_height\n"
 for d in os.listdir(indir):
     pattern = '_ROI_'
     if (re.search(pattern, d)):
