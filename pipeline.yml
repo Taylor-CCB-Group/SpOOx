@@ -1,3 +1,5 @@
+batch_queue: batch
+
 cluster:
   queue_manager: slurm
   queue: batch
