@@ -113,7 +113,7 @@ COVID_sample_1_ROI_3_CELL_1.tiff
 ```
 
 ### Quick start #######
-It is recommended you run the pipeline one step at a time (see below), when running for the first time or for trouble shooting, however if you already have a file that specifies which markers are to be used for segmentation and clustering, the whole pipeline can be run with
+**It is recommended you run the pipeline one step at a time (see below), when running for the first time or for trouble shooting.** However if you already have a file that specifies which markers are to be used for segmentation and clustering, the whole pipeline can be run with
 ```
 python SpOOx/hyperion_pipeline.py make phenoharmonycluster
 ```
