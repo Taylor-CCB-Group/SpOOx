@@ -52,12 +52,13 @@ def make_config(outfile):
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 # deepcell
+
 @transform (tiff_to_histocat, regex(r'histocat/(.*)/.ruffus'), r'deepcell/\1/deepcell.tif')
 def deepcell (infile, outfile):
     indir = os.path.dirname(infile)
     outdir = os.path.dirname(outfile)
     statement = '''python %(scripts_dir)s/deepercell.py --markerfile %(marker_file)s 
-                --indir %(indir)s --outdir %(outdir)s --contrast 5'''
+                --indir %(indir)s --outdir %(outdir)s $(deepcell_options)'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 # signal_extraction
