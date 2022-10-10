@@ -9,7 +9,6 @@ dependencies:
 - python=3.8
 - scikit-image=0.18.3
 - opencv=4.5.5
-- tifffile=2021.11.2
 - numpy=1.23.2
 - scipy=1.7.3
 - statsmodels=0.13.1
@@ -35,10 +34,13 @@ dependencies:
 - r-rcolorbrewer
 - r-remotes
 - r-data.table
+- harmonypy=0.0.6
 
 - pip: 
   - multipagetiff
   - imctools
   - deepcell
   - zegami-cli
-
+  - tifffile==2021.11.2
+  - PhenoGraph
+  - MulticoreTSNE
