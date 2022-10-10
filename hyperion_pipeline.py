@@ -17,6 +17,9 @@ import os
 from imctools.converters import mcdfolder2imcfolder
 from imctools.converters import ome2histocat
 
+print("!!!!!!!!!!!!!!!!!!!!!!!! Pipeline started !!!!!!!!!!!!!!!!!!!!!!!!")
+# print current working directory
+print("Current working directory: {}".format(os.getcwd()))
 
 # import pipeline parameters from yaml format configuration file in working directory
 PARAMS = P.get_parameters("pipeline.yml")
@@ -41,14 +44,14 @@ def mcd_to_tiff (infile, outfile):
 @subdivide(mcd_to_tiff, regex(r'ometiff/(.*)/.ruffus'), r'histocat/\1_ROI_*/.ruffus')
 def tiff_to_histocat (infile, outfiles):
     indir = os.path.dirname(infile)
-    statement = '''python %(scripts_dir)s/parse_ome.py -i %(indir)s -o histocat'''
+    statement = '''python %(scripts_dir)s/parse_ome.py -i %(indir)s -o histocat > %(outfile)s.log 2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 # make_config
 @follows(tiff_to_histocat)
 @originate(PARAMS["marker_file"])
 def make_config(outfile):
-    statement = '''python %(scripts_dir)s/writeconfig.py --indir histocat --outfile %(marker_file)s'''
+    statement = '''python %(scripts_dir)s/writeconfig.py --indir histocat --outfile %(marker_file)s > %(outfile)s.log 2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 # deepcell
@@ -58,7 +61,7 @@ def deepcell (infile, outfile):
     indir = os.path.dirname(infile)
     outdir = os.path.dirname(outfile)
     statement = '''python %(scripts_dir)s/deepercell.py --markerfile %(marker_file)s 
-                --indir %(indir)s --outdir %(outdir)s $(deepcell_options)'''
+                --indir %(indir)s --outdir %(outdir)s $(deepcell_options) > %(outfile)s.log 2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 # signal_extraction
@@ -74,7 +77,7 @@ def signal_extraction (infile, outfile):
                 MAKE_NEW
                 %(outdir)s
                 --analysisName %(analysis_name)s
-                %(signal_extraction_options)s'''
+                %(signal_extraction_options)s > %(outfile)s.log 2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 
@@ -83,9 +86,9 @@ def signal_extraction (infile, outfile):
 @follows(signal_extraction)
 @originate("signalextraction/mergecellData.tab")
 def mergecelldata(outfile):
-    statement = '''python %(scripts_dir)s/make_metadata.py'''
+    statement = '''python %(scripts_dir)s/make_metadata.py > %(outfile)s.log 2>&1'''
     P.run(statement, without_cluster=True)
-    statement = '''python %(scripts_dir)s/mergecelldata.py %(mergecelldata_options)s'''
+    statement = '''python %(scripts_dir)s/mergecelldata.py %(mergecelldata_options)s > %(outfile)s.log 2>&1'''
     P.run(statement, without_cluster=True)
     
 
@@ -97,7 +100,7 @@ def phenoharmonycluster(outfile):
                 --panel_file %(marker_file)s
                 --input_file signalextraction/mergecellData.tab
                 --output_dir clustering
-                %(phenograph_options)s'''
+                %(phenograph_options)s > %(outfile)s.log 2>&1'''
     P.run(statement,job_queue=PARAMS["batch_queue"])
 
 
