@@ -7,6 +7,7 @@ import os.path
 import pandas as pd
 from pandas_profiling import ProfileReport
 
+
 def FindAll(name, indir):
     # name of file
     # starting path
@@ -30,9 +31,10 @@ def AppendFiles(fileList, outputFile, minAreaVal, maxAreaVal):
     # gets rid of any columns that don't line up with the header
     afterClean = df.dropna(axis='columns')
     afterClean.to_csv(outputFile,sep="\t", index=False)
-    pandasReport = os.path.join(outputDir,"pandasprofile.html")
-    profile = ProfileReport(df, title="Pandas Profiling Report", minimal=True, progress_bar=False)
-    profile.to_file(pandasReport)
+    # commented out the following line as it is nor working at the moment
+    #pandasReport = os.path.join(outputDir,"pandasprofile.html")
+    #profile = ProfileReport(df, title="Pandas Profiling Report", minimal=True, progress_bar=False)
+    #profile.to_file(pandasReport)
 
 
 parser = argparse.ArgumentParser(description='''Generate merged cellData.tab files so can run analyses at the source/sample level based on the files one level below
