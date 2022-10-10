@@ -22,6 +22,7 @@ from skimage.segmentation import find_boundaries
 import re
 from pandas_profiling import ProfileReport
 import logging
+logger = logging.getLogger(__name__)
 
 logging_format = '%(asctime)s\t%(levelname)s\t%(message)s'
 
@@ -113,11 +114,19 @@ if not runAsScript:
     parser.add_argument('--analysisName',
                        type=str,
                        help='overrides the default the name of this analysis which is derived from the directory name')
+    parser.add_argument('--minImageHeight',
+                       type=int,
+                       default=25,
+                       help='overrides the default fo the minimum image height (in pixels) to be considered for analysis')
+    parser.add_argument('--minImageWidth',
+                       type=int,
+                       default=25,
+                       help='overrides the default fo the minimum image width (in pixels) to be considered for analysis')
+
 
     # Execute the parse_args() method
     args = parser.parse_args()
-    print("\n******************************\n",args,"\n******************************\n")
-
+    #print("\n******************************\n",args,"\n******************************\n")
 
     # print(args)
     #st if analysis name not specified autogenerate from the file path of the label matrix path
@@ -126,8 +135,8 @@ if not runAsScript:
     else:
         analysisName = AnalysisNameFromPath(args.pathToLabelMatrix)
     
-    print(args.pathToLabelMatrix)
-    print("Name of analysis  : " + analysisName)
+    #print(args.pathToLabelMatrix)
+    #print("Name of analysis  : " + analysisName)
     
     pathToLabelMatrix = args.pathToLabelMatrix
     pathToIntensityDataFolder = args.pathToIntensityDataFolder
@@ -156,16 +165,16 @@ if not runAsScript:
         backgroundColour = [0.5,0.5,0.5]         
         
     if not os.path.isfile(pathToLabelMatrix):
-        print('The label matrix specified does not exist')
+        logger.error("No mcd files found in input directory")('The label matrix specified does not exist')
         sys.exit()
 
     if not os.path.isdir(pathToIntensityDataFolder):
-        print('The intensity data folder specified does not exist')
+        logger.error('The intensity data folder specified does not exist')
         sys.exit()
         
     if pathToRgbImage != 'MAKE_NEW':
         if not os.path.isfile(pathToRgbImage):
-            print('The rgb image specified does not exist')
+            logger.error('The rgb image specified does not exist')
             sys.exit()
         
 else:
@@ -209,20 +218,30 @@ colormap = m.to_rgba(color_bins)[:, :3]
         
 # Read in the label matrix
 if verbose:
-    print('Reading label matrix')
+    logging.info('Reading label matrix')
 label = skimage.io.imread(pathToLabelMatrix)
 result = skimage.color.label2rgb(label, colors=colormap, alpha=0.3, bg_label=0, bg_color=(0, 0, 0))
+
+# height and width of the label matrix
 [h,w] = np.shape(label)
+
+# prevents processing of the very small images that are used for test ablations of the instrument usually
+# but could be applied to any image
+if h <= args.minImageHeight or w <= args.minImageWidth:
+    logging.error('The image is too small. The minimum dimensions are greater than ' + str(args.minImageHeight) + ' x ' + str(args.minImageWidth))
+    sys.exit()
+
+
 if saveSegmentationImage:
     if verbose:
-        print('Saving segmentation image to: ' + pathToSaveAnalysis + 'SegmentationImage.png')
+        logging.info('Saving segmentation image to: ' + pathToSaveAnalysis + 'SegmentationImage.png')
     plt.figure(figsize=(9,9))
     plt.imshow(result)
     plt.savefig(pathToSaveAnalysis + 'SegmentationImage.png',dpi=600)
     plt.close()
     
     if verbose:
-        print('Saving bw segmentation image to: ' + pathToSaveAnalysis + 'SegmentationImage_bw.png')
+        logging.info('Saving bw segmentation image to: ' + pathToSaveAnalysis + 'SegmentationImage_bw.png')
     boundaries = find_boundaries(label)
     toPlot = label>0
     toPlot = toPlot & ~boundaries
@@ -233,20 +252,19 @@ if saveSegmentationImage:
     plt.close()
 
 if verbose:
-    print('Reading intensity images')
+    logger.info('Reading intensity images')
 
 intensityImagesList = [pathToIntensityDataFolder + v for v in os.listdir(pathToIntensityDataFolder) if v.endswith('.tiff')]
 stainList = [v[:-5] for v in os.listdir(pathToIntensityDataFolder) if v.endswith('.tiff')]
 
 #ST ignore the metal ending 
 #todo convert the source names to ones without the marker
-print("List of markers: ",stainList)
+logger.info("List of markers: ",stainList)
 stainList = [re.sub(r'_\w+', '', stain) for stain in stainList]
-print("List of markers after trimming: ",stainList)
+logger.info("List of markers after trimming: ",stainList)
 
 images = np.zeros(shape=(h,w,len(intensityImagesList)))
 for i, image in enumerate(intensityImagesList):
-    print(image)
     images[:,:,i] = skimage.io.imread(image)
 
 # Can do this more efficiently later using the intensity_image keyword; at the moment only supported in skimage 0.18 onwards (cluster has 0.17)
@@ -256,18 +274,17 @@ if makeCellImages:
     # Check whether we're making a new image or not
     if pathToRgbImage == 'MAKE_NEW':
         if verbose:
-            print('Collecting histocat images for rgb output')
+            logger.info('Collecting histocat images for rgb output')
         channelNames = rgb_string.split(',')
         if len(channelNames) != 3:
-            print('When using MAKE_NEW, ensure --set_rgb is specified as a single string of comma separated histocat channel names (e.g., "DNA1_Ir191,PanK_Nd148,Ki67_Er168")')
+            logger.error('When using MAKE_NEW, ensure --set_rgb is specified as a single string of comma separated histocat channel names (e.g., "DNA1_Ir191,PanK_Nd148,Ki67_Er168")')
             sys.exit()
         try:
             rgb_indices = [stainList.index(v) for v in channelNames]
         except Exception as e:
-            print(rgb_indices)
-            print('Cannot generate rgb images because:')
-            print(e)
-            print('Ensure --set_rgb is correctly formatted, and that each of the three given stains appears in the histocat folder.')
+            logger.error('Cannot generate rgb images because:')
+            logger.error(e)
+            logger.error('Ensure --set_rgb is correctly formatted, and that each of the three given stains appears in the histocat folder.')
             sys.exit()
         # Great, now create the rgb image
         rgb = images[:,:,rgb_indices]
@@ -279,7 +296,7 @@ if makeCellImages:
     else:
         # Read specified rgb image
         if verbose:
-            print('Opening rgb image: ' + pathToRgbImage)
+            logger.info('Opening rgb image: ' + pathToRgbImage)
         rgb = skimage.io.imread(pathToRgbImage)
     
     if rgb.dtype == 'uint16':
@@ -292,11 +309,11 @@ if makeCellImages:
     # Rescale image if necessary
     if h != h2 or w != w2:
         if h/h2 == w/w2:
-            print('Rescaling rgb image')
+            logging.info('Rescaling rgb image')
             rgb = rescale(rgb, h/h2, anti_aliasing=False, multichannel=True)
         else:
             # TODO - proper error detection here!
-            print('rgb image and label matrix have different aspect ratios')
+            logging.error('rgb image and label matrix have different aspect ratios')
             sys.exit()
         
         
@@ -304,9 +321,10 @@ if makeCellImages:
 # One dict per row
 outputList = []
 if verbose:
-    print('Collating cell statistics')
+    logging.info('Collating cell statistics')
     
 [h,w] = np.shape(label)
+
 for i in range(len(properties)):
     # make the cell id uniquely identifyable
     cellIdImage = analysisName +'_CELL_' + str(i) + cellSegmentationImagesExtension
@@ -321,6 +339,7 @@ for i in range(len(properties)):
         
     stats = {}
     stats['Image Name'] = cellIdImage
+    logger.info("cellIdImage: ",cellIdImage)
     stats['x'] = properties[i].centroid[1]
     stats['y'] = h-properties[i].centroid[0]
     stats['cellID'] = cellId
@@ -360,7 +379,8 @@ for i in range(len(properties)):
     
     
 if verbose:
-    print('Cell statistics complete')    
+    logger.info('Cell statistics complete')    
+    logger.info('stainList: ' + str(stainList))
 df = pd.DataFrame(outputList)
 # We'll do the data trimming and normalising once we've made a dataframe, so we can use pandas and don't have to worry about it on a cell by cell basis
 
@@ -376,7 +396,7 @@ for j, stain in enumerate(stainList):
         df.loc[:,(stain)] = df[stain]/df[stain].max()
 
 if verbose:
-    print('Writing cell statistics file to: ' + pathToSaveAnalysis + statisticsTable)
+    logger.info('Writing cell statistics file to: ' + pathToSaveAnalysis + statisticsTable)
     #st
 #df.to_csv(pathToSaveAnalysis + analysisName + '_cellData.csv',index=False)
 #df.to_csv(pathToSaveAnalysis + analysisName + '_cellData.txt', index=False, sep='\t')
@@ -403,7 +423,7 @@ else:
             format = logging_format
     )
 
-print("******************************")
-print(args)
-print("******************************")
-logging.info(args)
+#print("******************************")
+#print(args)
+#print("******************************")
+#logging.info(args)
