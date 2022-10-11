@@ -183,7 +183,7 @@ python SpOOx/hyperion_pipeline.py make phenoharmonycluster
 
 ====================================
 
-Optional step for visualisation using Zegami (account required: https://zegami.com/)
+Optional step for visualisation using Zegami (account required: https://zegami.com/). To upload to Zegami you have to install the Zegami command line and enter your username and password to save a token that can be used by SpOOx. More details on this <a href="https://github.com/zegami/zegami-cli">here</a>.
 ```
 python SpOOx/hyperion_pipeline.py make zegami_roi
 ```
