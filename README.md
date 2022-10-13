@@ -112,8 +112,12 @@ For example:
 COVID_sample_1_ROI_3_CELL_1.tiff
 ```
 
-### Quick start #######
-**It is recommended you run the pipeline one step at a time (see below), when running for the first time or for trouble shooting.** However if you already have a file that specifies which markers are to be used for segmentation and clustering, the whole pipeline can be run with
+### Introduction to running the pipeline ###
+**It is recommended you run the pipeline one step at a time (see below), when running for the first time to understand the process or for trouble shooting.** The SpOOx pipeline can be run at any step and all steps upstream will be attempted. For example, you may wish to exclude certain ROIs because the staining was not optimal or the region captured was too small. In this case you could run up to the generation of ROIs for each marker staining. We call this the histocat output because this produces tiff files which are compatible with ethe Histocat tool). There are other things to bear in mind when running your samples, such as naming of markers, which if inconsistent will cause an error in the running of the pipeline. 
+
+### Running the pipeline at once ###
+
+If you already have a file that specifies which markers are to be used for segmentation and clustering, the whole pipeline can be run with
 ```
 python SpOOx/hyperion_pipeline.py make phenoharmonycluster
 ```
