@@ -23,7 +23,7 @@ parser.add_argument('--indir', dest='indir',
                     help='reference directory (ROI) to base renaming all other directories on.')
 parser.add_argument('--histocatdir', dest='histocatdir',
                     help='output directory of histocat files.')
-parser.add_argument('--rename', dest='rename', action='store_true',
+parser.add_argument('--rename', dest='rename', action='store_true', default=True,
                     help='rename all the files based on the reference naming scheme ')
 
 args = parser.parse_args()
