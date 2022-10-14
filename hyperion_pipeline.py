@@ -44,25 +44,50 @@ def mcd_to_tiff (infile, outfile):
 @subdivide(mcd_to_tiff, regex(r'ometiff/(.*)/.ruffus'), r'histocat/\1_ROI_*/.ruffus')
 def tiff_to_histocat (infile, outfiles):
     indir = os.path.dirname(infile)
-    statement = '''python %(scripts_dir)s/parse_ome.py -i %(indir)s -o histocat > %(outfile)s.log 2>&1'''
+    statement = '''python %(scripts_dir)s/parse_ome.py -i %(indir)s -o histocat > tiff_to_histocat.log 2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
-# make_config
+
+#remove images that are too small (test ones) and ones that do have biological content
+@follows(tiff_to_histocat)
+def removebadimages():
+    statement = '''python %(scripts_dir)s/removebadimages.py -i histocat -o badhistocat > removebadimages.log 2>&1'''
+    P.run(statement, job_queue=PARAMS['batch_queue'])
+
+
+# make_config file
 @follows(tiff_to_histocat)
 @originate(PARAMS["marker_file"])
 def make_config(outfile):
-    statement = '''python %(scripts_dir)s/writeconfig.py --indir histocat --outfile %(marker_file)s > %(outfile)s.log 2>&1'''
+    statement = '''python %(scripts_dir)s/writeconfig.py --indir histocat --outfile %(marker_file)s > make_config.log  2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 # deepcell
-
 @transform (tiff_to_histocat, regex(r'histocat/(.*)/.ruffus'), r'deepcell/\1/deepcell.tif')
 def deepcell (infile, outfile):
     indir = os.path.dirname(infile)
     outdir = os.path.dirname(outfile)
     statement = '''python %(scripts_dir)s/deepercell.py --markerfile %(marker_file)s 
-                --indir %(indir)s --outdir %(outdir)s $(deepcell_options) > %(outfile)s.log 2>&1'''
+                --indir %(indir)s --outdir %(outdir)s %(deepcell_options)s > deepcell.log 2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
+
+# mark_histocat
+@follows(tiff_to_histocat)
+@originate("histocat/.ruffus")
+def mark_histocat(outfile):
+    statement = '''touch %(outfile)s'''
+    P.run(statement, without_cluster=True)
+
+# make pngs for visualisation
+@follows(tiff_to_histocat, mkdir("pngs"))
+@transform (mark_histocat, regex(r'histocat/.ruffus'), r'pngs/index.tsv')
+def roi2pngs (infile, outfile):
+    statement = '''python %(scripts_dir)s/roi2png.py 
+                    --indir histocat --outdir pngs > roi2pngs.log 2>&1'''
+    P.run(statement, without_cluster=True)
+    statement = '''python %(scripts_dir)s/deepcell2png.py 
+                    --indir deepcell --outdir pngs/img > deepcell2pngs.log 2>&1'''
+    P.run(statement, without_cluster=True)
 
 # signal_extraction
 @transform (deepcell, regex(r'deepcell/(.*)/deepcell.tif'), r'signalextraction/\1/cellData.tab')
@@ -77,18 +102,16 @@ def signal_extraction (infile, outfile):
                 MAKE_NEW
                 %(outdir)s
                 --analysisName %(analysis_name)s
-                %(signal_extraction_options)s > %(outfile)s.log 2>&1'''
+                %(signal_extraction_options)s > signalextraction.log 2>&1'''
     P.run(statement, job_queue=PARAMS['batch_queue'])
-
-
 
 
 @follows(signal_extraction)
 @originate("signalextraction/mergecellData.tab")
 def mergecelldata(outfile):
-    statement = '''python %(scripts_dir)s/make_metadata.py > %(outfile)s.log 2>&1'''
+    statement = '''python %(scripts_dir)s/make_metadata.py > mergecelldata.log 2>&1'''
     P.run(statement, without_cluster=True)
-    statement = '''python %(scripts_dir)s/mergecelldata.py %(mergecelldata_options)s > %(outfile)s.log 2>&1'''
+    statement = '''python %(scripts_dir)s/mergecelldata.py > mergecelldata.log 2>&1'''
     P.run(statement, without_cluster=True)
     
 
@@ -100,7 +123,7 @@ def phenoharmonycluster(outfile):
                 --panel_file %(marker_file)s
                 --input_file signalextraction/mergecellData.tab
                 --output_dir clustering
-                %(phenograph_options)s > %(outfile)s.log 2>&1'''
+                %(phenograph_options)s > clustering.log 2>&1'''
     P.run(statement,job_queue=PARAMS["batch_queue"])
 
 
@@ -108,12 +131,7 @@ def phenoharmonycluster(outfile):
 ### Zegami ######################################################################
 
 
-# mark_histocat
-@follows(tiff_to_histocat)
-@originate("histocat/.ruffus")
-def mark_histocat(outfile):
-    statement = '''touch %(outfile)s'''
-    P.run(statement, without_cluster=True)
+
 
 # zegami_roi
 @follows(tiff_to_histocat, mkdir("zegami"))
