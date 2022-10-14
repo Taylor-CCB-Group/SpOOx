@@ -112,8 +112,12 @@ For example:
 COVID_sample_1_ROI_3_CELL_1.tiff
 ```
 
-### Quick start #######
-**It is recommended you run the pipeline one step at a time (see below), when running for the first time or for trouble shooting.** However if you already have a file that specifies which markers are to be used for segmentation and clustering, the whole pipeline can be run with
+### Introduction to running the pipeline ###
+**It is recommended you run the pipeline step by step (see below), when running for the first time to understand the process or for trouble shooting.** The SpOOx pipeline can be run at any step and all steps upstream will be attempted. For example, you may wish to exclude certain ROIs because the staining was not optimal or the region captured was too small. In this case you could run up to the generation of ROIs for each marker staining (see `tiff_to_histocat`). There are other things to bear in mind when running your samples, such as naming of markers, which if inconsistent will cause an error in the running of the pipeline. 
+
+### Running the pipeline using a single command ###
+
+If you already have a file that specifies which markers are to be used for segmentation and clustering, the whole pipeline can be run with
 ```
 python SpOOx/hyperion_pipeline.py make phenoharmonycluster
 ```
@@ -130,7 +134,7 @@ python SpOOx/hyperion_pipeline.py make phenoharmonycluster
 ```
 
 
-### Pipeline commands:
+### Running the pipeline step by step ###
 A basic Ruffus function 'show' can be used to describe the steps that make up the pipeline:
 ```
 python SpOOx/hyperion_pipeline.py show
@@ -147,7 +151,7 @@ The initial inputs to the pipeline are MCD image and metadata files from the hyp
 python SpOOx/hyperion_pipeline.py make mcd_to_tiff
 ```
 
-The OME TIFF format files for each ROI are  processed to export a TIFF file based on each marker used as part of the panel. 
+The OME TIFF format files for each ROI are  processed to export a TIFF file based on each marker used as part of the panel (we call this the 'histocat' output because this produces tiff files which are compatible with histocat, but it is really just a convenient way for storing these files to enable processing by SpOOx).
 ```
 python SpOOx/hyperion_pipeline.py make tiff_to_histocat
 ```
