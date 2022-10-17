@@ -160,7 +160,12 @@ The OME TIFF format files for each ROI are  processed to export a TIFF file base
 ```
 python SpOOx/hyperion_pipeline.py make tiff_to_histocat
 ```
-
+When using the Hyperion, some images are not useful for further analysis. For example, multiple images are sometimes created to test ablation strength for a ROI. These are often small test images of 25 x 25 pixels. Other non useful images are ones that are used to calibrate a the machine. The name of these usually begins with a number e.g. 80ArAR,134XE etc
+To remove these so they don't get analysed any further you can use:
+```
+python SpOOx/hyperion_pipeline.py make removebadimages
+```
+and this will move these in a directory called 'badimages'
 
 Next we create a 'markers' configuration file which is used to specify nuclear and cytoplasm channels (used in the following segmentation step). The name of the configuration file is specified using the 'marker_file' param in the 'pipeline.yml' file. 
 ```
