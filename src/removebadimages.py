@@ -22,11 +22,11 @@ parser.add_argument('-i', '--indir', help='input directory', required=True)
 parser.add_argument('-o', '--outdir', help='output directory', required=True)
 parser.add_argument('--minImageHeight',
                        type=int,
-                       default=100,
+                       default=25,
                        help='overrides the default fo the minimum image height (in pixels) to be considered for analysis')
 parser.add_argument('--minImageWidth',
                        type=int,
-                       default=100,
+                       default=25,
                        help='overrides the default fo the minimum image width (in pixels) to be considered for analysis')
 # filter ou images whoe marker begines witha number argument
 parser.add_argument('--filterNonMarkers', 

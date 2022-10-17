@@ -8,6 +8,7 @@ scripts_dir: SpOOx/src
 
 hyperion_dir: mcd
 marker_file: markers_panel.tsv
+removebadimages_options: --minImageWidth 25 --minImageHeight 25 --filterNonMarkers 
 deepcell_options: --contrast 5
 signal_extraction_options: --verbose --distribution_crop_percentile 1.0 --doArcsinh
 phenograph_options: --save_sceobj --datatransf scaledtrim --k 30 --q 0.001 
@@ -15,5 +16,5 @@ phenograph_options: --save_sceobj --datatransf scaledtrim --k 30 --q 0.001
 zegami:
   stack_dir: zegamistacks
   dir: zegami
-  project: <project_name>
-  collection: <collection_name>
+  project: RjV6L0x3
+  collection: AE_1

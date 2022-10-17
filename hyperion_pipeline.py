@@ -48,11 +48,11 @@ def tiff_to_histocat (infile, outfiles):
     P.run(statement, job_queue=PARAMS['batch_queue'])
 
 
-#remove images that are too small (test ones) and ones that do have biological content
-@follows(tiff_to_histocat)
+#remove images that are too small (test ones) and ones that do not have biological content
+@follows(tiff_to_histocat, mkdir("badimages"))
 def removebadimages():
-    statement = '''python %(scripts_dir)s/removebadimages.py -i histocat -o badhistocat > removebadimages.log 2>&1'''
-    P.run(statement, job_queue=PARAMS['batch_queue'])
+    statement = '''python %(scripts_dir)s/removebadimages.py -i histocat -o badimages %(removebadimages_options)s  > removebadimages.log 2>&1'''
+    P.run(statement, without_cluster=True)
 
 
 # make_config file
