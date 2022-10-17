@@ -21,6 +21,11 @@ conda activate hyperion
 ### Pipeline Parameters ###################
 Parameters are specified in the pipeline.yaml file in the working directory
 
+For example you will see:
+`deepcell_options: --contrast 5`
+
+If you change the contrast option this will change it for every job that is run the pipeline.
+
 #### Specifying the queue manager
 
 If the pipeline is not run with the --local option, then it will attempt to submit jobs to the systems cluster mechanism, which needs to be specified in the  `batch_queue` and `cluster` parameters, the following example is for slurm and a queue named 'batch'
