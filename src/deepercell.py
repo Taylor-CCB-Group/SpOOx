@@ -51,6 +51,20 @@ def TiffNorm(src_image,dest_image,contrast,brightness):
     out = cv2.addWeighted(normed, contrast, normed, 0, brightness)
     cv2.imwrite(dest_image,out)
 
+def TiffNorm2(src_image,dest_image,contrast,brightness):
+    img = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+    #
+    # make a blank image the same size as the original
+    blank = np.zeros(img.shape, dtype=np.uint8)
+    #normalize
+    norm_img = cv2.normalize(img, blank, alpha=contrast, beta=brightness, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+
+    #normed = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+    print("contrast=",contrast)
+    print("brightness=",brightness)
+    #out = cv2.addWeighted(normed, contrast, normed, 0, brightness)
+    #cv2.imwrite(dest_image,out)
+    cv2.imwrite(dest_image,norm_img)
 
 def Tiff2Stack(fileName, imageList, dirName):
     with tifffile.TiffWriter(fileName) as stack:
