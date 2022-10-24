@@ -1,6 +1,6 @@
     #information for mlv
-    name : "my name"
-    description : "my description"
+    name : "Project Title"
+    description : "Project Description"
     #not used but required to create a project
     genome : "hg19" 
 
@@ -13,27 +13,28 @@
     # the base url of server running the app
     url : "https://mlv.molbiol.ox.ac.uk"
     
-    # the token obtained from the website
-    token : "my token" 
+    # the 86 character MDV access key token obtained from the website
+    # see the README for details
+    token : "eyJpZCI6OCwiYWN0aW9uIjoiY3JlYXRlX2h5cF9wcm9qZWN0In0.FjRDiw.SU5sH88SHdRAB8J8D80rxvfVZXo" 
    
 
     # the tab delimited text file containing the data 
-    data_file : "/path/to/file.txt" 
+    data_file : "clustering/clusters.txt" 
 
     # the tab delimited text file containing marker information must have
     # at least three columns marker_name, clustering, nucleus
     # The clustering columns should have a 1 for markers which werre used in
     # the clustering
-    marker_file : "/path/to/panel/panel.tsv"
+    marker_file : "markers_panel.tsv"
 
     # images in these folders will be uploaded and can be used in MLV , they must be named <sample_id>_<name>.png
     # if they are not the same scale as micro_per_pixel they will need manual manipulation in MLV to get them
     # in synch
     image_folders:
-        - "/path/to/img/folder"
+        - "pngs/img"
 
 
-    pca_file : "/path/to/pca.txt"
+    pca_file : "clustering/pcas.txt"
 
     #only include the following images from the given folders
     #if absent then all images will be included 
@@ -100,7 +101,7 @@
     sample_fields:
         - "sample_name"
         - "ROI"
-        - "condition"
+    #    - "condition"
     
     cell_data:
         -  "area"
