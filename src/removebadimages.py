@@ -35,6 +35,16 @@ parser.add_argument('-n','--filterNonMarkers',
                         help='Remove images that are just used to calibrate the machine' )
 args = parser.parse_args()
 
+# function to compare two strings are the same even if characters are in random order
+def CompareStrings(str1, str2):
+    a = sorted(str1)
+    b = sorted(str2)
+    if(sorted(str1)== sorted(str2)): 
+        return True
+    else: 
+        return False
+
+
 # exit if no arguments are given
 if len(sys.argv)==1:
     parser.print_help(sys.stderr)
@@ -92,7 +102,8 @@ if (args.filterNonMarkers):
         metalName=filename_only.split('_')[1]
         logging.debug(metalName  + " " + markerName)
         moveToDirectory = args.outdir + '/' + parentDir
-        if (markerName == metalName):
+        #if (markerName == metalName):
+        if CompareStrings(markerName, metalName):
             # make directory if it doesn't exist
             if not os.path.exists(moveToDirectory):
                 os.makedirs(moveToDirectory)
