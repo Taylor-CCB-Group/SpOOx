@@ -124,7 +124,7 @@ COVID_sample_1_ROI_3_CELL_1.tiff
 
 If you already have a file that specifies which markers are to be used for segmentation and clustering, the whole pipeline can be run with
 ```
-python SpOOx/hyperion_pipeline.py make phenoharmonycluster
+python SpOOx/hyperion_pipeline.py make 
 ```
 You  will need to specify the markers file in the pipeline.yml file
 
@@ -135,7 +135,7 @@ python SpOOx/hyperion_pipeline.py make make_config
 Then fill in the file and continue the rest of the pipeline
 
 ```
-python SpOOx/hyperion_pipeline.py make phenoharmonycluster
+python SpOOx/hyperion_pipeline.py make
 ```
 
 
