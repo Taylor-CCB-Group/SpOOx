@@ -449,6 +449,9 @@ def moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, coun
 
         C_ns = []
         for i in range(np.shape(Ns)[0]):
+        # test for a non singular matrix ST
+            if np.linalg.det(np.cov(Ns[i])) != 0:
+                return
             Sigma = np.cov(Ns[i])
             Sigma_inv = np.linalg.inv(Sigma)
             C_n = getCFromSigma_inv(Sigma_inv)
