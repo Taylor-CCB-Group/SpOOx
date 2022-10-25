@@ -1,0 +1,130 @@
+    #information for mlv
+    name : "Project Title"
+    description : "Project Description"
+    #not used but required to create a project
+    genome : "hg19" 
+
+
+    #the samples to include - if absent or False then all samples in the file will be added
+    #samples_to_include:
+    #    - "COVID_SAMPLE_4_ROI_2"
+
+
+    # the base url of server running the app
+    url : "https://mlv.molbiol.ox.ac.uk"
+    
+    # the 86 character MDV access key token obtained from the website
+    # see the README for details
+    token : "" 
+   
+
+    # the tab delimited text file containing the data 
+    data_file : "clustering/clusters.txt" 
+
+    # the tab delimited text file containing marker information must have
+    # at least three columns marker_name, clustering, nucleus
+    # The clustering columns should have a 1 for markers which werre used in
+    # the clustering
+    marker_file : "markers_panel.tsv"
+
+    # images in these folders will be uploaded and can be used in MLV , they must be named <sample_id>_<name>.png
+    # if they are not the same scale as micro_per_pixel they will need manual manipulation in MLV to get them
+    # in synch
+    image_folders:
+        - "pngs/img"
+
+
+    pca_file : "clustering/pcas.txt"
+
+    #only include the following images from the given folders
+    #if absent then all images will be included 
+    #images_to_include: 
+    #    - "DNA1_Ir191"
+    #    - "DNA3_Ir193"
+
+    
+
+
+    #If true will only create files and not upload them (for debugging purposes)
+    create_files_only : False
+
+    #The directory to write the temporary files to
+    output_dir : "."
+
+    #Delete the temporary files after upload
+    delete_files_after_upload : True
+
+    #annotations = delete or set to False if no annotations
+    # file - a tsv file with two columns ClusterNumber and Annotation -  cluster number
+    # should be 1,2....10 etc and correspond to cl01,cl02,...,cl10 in the based_on column
+    # based_on - the column the annotations are based on (1 to 1 match)
+    # name - the name of the annotations
+    #annotations:
+    #  file: "config/clusterannotation.tab"
+    #  based_on: "harmony_phenograph_exprs"
+    #  name: "annotations"
+
+    # the dimension reduction (DM) fields in the data file in their logical groups and appropriately named
+    # Any number of DMs can be added, the name of DM is arbitary but each has to be a list of 2 or 3
+    # which match headers in the data file
+    dimension_reduction:
+        "UMAP":
+            - "UMAP_1"
+            - "UMAP_2"
+            - "UMAP_3"
+    #    "TSNE":
+    #        - "TSNE_1"
+    #        - "TSNE_2"
+    #        - "TSNE_3"
+       
+    # The clustering field(s) 
+    clustering:
+        - "harmony_pheno_cluster"
+    #   - "pheno_cluster"
+        
+
+    # the spatial position fields
+    position_fields:
+        - "x"
+        - "y"
+
+    micro_per_pixel: 1
+
+    # the name of the sample identifier  (if image_name_only is true, a sample_id column will be added -so the value should be sample_id)
+    sample_identifier: "sample_id"
+
+    # the name of the cell identifier 
+    cell_identifier: "cellID"
+
+    # other fields associated with the sample (if image_name_only is true sample_name,ROI and condition will added to the datafile and
+    # hence can be specified below
+    sample_fields:
+        - "sample_name"
+        - "ROI"
+    #    - "condition"
+    
+    cell_data:
+        -  "area"
+        -  "eccentricity"
+        -  "major_axis_length"
+        -  "minor_axis_length"
+        -  "perimeter"
+
+    # the default image for an image scatter plot that is added by the user
+    default_image: "DNA1_Ir191"
+
+
+    #other fields (optional)
+    # other_fields:
+
+    #    - name: "equivalent_diameter"
+    #      type: "double"
+    #
+    #    - name: "local_centroid"
+    #      type: "text"
+
+
+    # default color field will be the color applied to all scatter plots (2d/3d and image)
+    # added by the user. If none supplied will be the first clustering field
+    default_color_field: null
+
