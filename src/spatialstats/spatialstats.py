@@ -4,7 +4,6 @@
 DESC = ("Apply spatial statistics pipeline with command line inputs.")
 
 # Imports
-from ast import Str
 import os
 import os.path
 import sys
@@ -30,7 +29,6 @@ sns.set(font_scale=2)
 prog = os.path.basename(__file__)
 description = DESC
 rois=[]
-tempAnnoFile = '/tmp/tempAnnoFile.txt'
 
 def main():     
         parser = argparse.ArgumentParser(
@@ -48,10 +46,10 @@ def main():
         parser.add_argument(
                 '-c', '--cluster_annotations', 
                 help = 'Input file with cluster annotations.',
-                required = False
+                required = True
         )
         parser.add_argument(
-                '-cl', '--clusteringIdColumn', 
+                '-cl', '--clusteringToUse', 
                 help = 'Name of column in the file specified by pathToData to use as the clustering label. Should correspond with the annotations in cluster_annotations',
                 required = True
         )
@@ -86,22 +84,22 @@ def main():
                 type=int
         )
 
-
+   
         args = parser.parse_args()
 
-        pathToData = args.pathToData#'/project/covidhyperion/shared/data/panel2/tree/HEALTHY/SAMPLE_1/ROI_1/clustering/cellData.tab'#
-        pathToWriteOutput = args.output#'/Filers/home/j/jbull/Temp1/'#
-        cluster_annotations = args.cluster_annotations#'/project/covidhyperion/shared/data/panel2//config//exampleclusterannotation.tab'#
-        clusteringIdColumn = args.clusteringIdColumn #'cluster_id s (str)
+        if (os.path.exists(args.cluster_annotations) == False):
+                print("Annotation file does not exist.")
+                sys.exit()
+
+
+
+        pathToData = args.pathToData
+        pathToWriteOutput = args.output
+        cluster_annotations = args.cluster_annotations
+        clusteringToUse = args.clusteringToUse
         rois = args.rois
 
-
-        # pathToData = '/t1-data/project/covidhyperion/shared/data/panel2/tree/clustering/COVID_HC/COVID_HC_cellData_Harmonyclustered_k30.txt'#'/t1-data/project/covidhyperion/shared/data/panel2/tree/COVID/SAMPLE_14/ROI_2/clustering/COVID_SAMPLE_14_ROI_2_cellData_clustered.txt'
-        # cluster_annotations = '/t1-data/project/covidhyperion/shared/data/panel2/config/clusterannotation.tab'
-        # clusteringIdColumn = 'harmony_phenograph_exprs'#'phenograph_cluster_scaledtrim_k30'
-        # pathToWriteOutput = '/Filers/home/j/jbull/Temp_2222_2/'
-         
-        
+    
         functions = args.functions
      
         if bool(functions) == False:
@@ -110,46 +108,17 @@ def main():
         
         print("Checking what samples and rois to analyse...")
 
-        datasets = preprocessing(pathToData,rois)
-        #df_annotations = pd.read_csv(cluster_annotations, sep='\t')
-
-        if (cluster_annotations is not None):
-                # check if cluster annotations file exists
-                if (os.path.exists(cluster_annotations)):
-                        print("Annotation file exists.")
-                        df_annotations = pd.read_csv(cluster_annotations, delimiter='\t')
-                        # Put into annoying format
-                        df_annotations.ClusterNumber = ['cl' + f"{v:02d}" for v in  df_annotations.ClusterNumber]        # Find the correct ROI.
-        else:
-                print("Annotation file does not exist. Using clustering column name as annotation column name.")
-                # this is for use if not using the cluster annotations file
-                #clusteringIdColumn = args.annotationColumn                
-                df_temp = pd.DataFrame()
-    
-                # make a non redundant list using clusteringIDcolumn
-                for ds in datasets:
-                        df_temp = df_temp.append(ds.df[[clusteringIdColumn]])
-                df_temp = df_temp.drop_duplicates()
-                df_temp = df_temp.sort_values(by=[clusteringIdColumn])
-                df_temp = df_temp.reset_index(drop=True)
-                df_temp = df_temp.rename(columns={clusteringIdColumn: "ClusterNumber"})
-                df_temp['Annotation'] = df_temp['ClusterNumber']
-                # set the cluster annotations file to the temp file
-                df_annotations = df_temp
-                print(df_annotations)
-
-        print("Annotation table processed.")
-        print("Starting analysis...")
-
-        #todo should not need to add a / 
-        print(datasets)
-        print(df_annotations)
+        df_annotations, datasets = preprocessing(pathToData, cluster_annotations,rois)
+        #make an output directory
+        Path(pathToWriteOutput).mkdir(parents=True, exist_ok=True)
+        print("Output file directory created.")
+      
         
         for ds in datasets:
             ds.pathToWriteOutput = pathToWriteOutput+"/quadratMethods/"
             if not os.path.exists(ds.pathToWriteOutput):
                 os.mkdir(ds.pathToWriteOutput)
-            #clusteringIdColumn = 'phenoGraph_cluster' ###ADD to cmd line?
+            #clusteringToUse = 'phenoGraph_cluster' ###ADD to cmd line?
             if len(df_annotations.ClusterNumber) < 21:
                 colors = [plt.cm.tab20(v) for v in range(len(df_annotations.ClusterNumber))]
             else:
@@ -161,14 +130,12 @@ def main():
             
             clusterNames = {df_annotations.ClusterNumber.iloc[v] : df_annotations.Annotation.iloc[v].strip() for v in range(len(df_annotations))}
     
-            #make an output directory
-            Path(pathToWriteOutput).mkdir(parents=True, exist_ok=True)
-            print("Output file directory created.")
+           
     
             #Calling the functions.
             functions = [x.casefold() for x in functions]
             if 'quadratcounts' in functions or 'quadratcelldistributions' in functions or 'morueta-holme' in functions:
-                    r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringIdColumn,args.quadrat_size)
+                    r, VMRs, counts = quadratMethods(ds, df_annotations, clusteringToUse,args.quadrat_size)
     
             for i in functions:
                     #get directory according to function and create the dirctory
@@ -177,9 +144,9 @@ def main():
                     if not os.path.exists(ds.pathToWriteOutput):
                             os.mkdir(ds.pathToWriteOutput)
                     if i == 'celllocationmap':
-                            cellLocationMap(ds, df_annotations, clusteringIdColumn, clusterNames, colors)
+                            cellLocationMap(ds, df_annotations, clusteringToUse, clusterNames, colors)
                     if i == 'contourplots':
-                            contourPlots(ds, df_annotations, clusteringIdColumn, clusterNames)
+                            contourPlots(ds, df_annotations, clusteringToUse, clusterNames)
                     if i == 'quadratcounts':
                             quadratCounts(ds, df_annotations, colors, clusterNames, r, VMRs)
                     if i == 'quadratcelldistributions':
@@ -187,16 +154,16 @@ def main():
                     if i == 'morueta-holme':
                             moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, counts)
                     if i == 'paircorrelationfunction':
-                            pairCorrelationFunction(ds, df_annotations, clusteringIdColumn, clusterNames)
+                            pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames)
                     if i == 'networkstatistics':
                             pathToLabelMatrix = os.path.join(args.deepcellPath ,str(ds.sample),'deepcell.tif')
                             labels = skimage.io.imread(pathToLabelMatrix)
-                            networkStatistics(ds, df_annotations, clusteringIdColumn, clusterNames, labels, colors)
+                            networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors)
                     if i == 'localclusteringheatmaps':
-                            localClusteringHeatmaps(ds, df_annotations, clusteringIdColumn, clusterNames)
+                            localClusteringHeatmaps(ds, df_annotations, clusteringToUse, clusterNames)
 
 
-def preprocessing(pathToData,rois):
+def preprocessing(pathToData, cluster_annotations,rois):
         # Filter dataframe to ensure spatial stats are only applied to the same sample   
         df = pd.read_csv(pathToData,delimiter='\t')        
         uniqueSamples = np.unique(df['sample_id'])
@@ -235,22 +202,23 @@ def preprocessing(pathToData,rois):
         #PART 1 - Preprocess main data table & make path to write output.
         #ds = dataset(pathToData)
         print("Main data tables processed.")
-        return datasets
-
-
-
-
- 
+        
+        #PART 2 - Preprocess annotation table.
+        df_annotations = pd.read_csv(cluster_annotations, delimiter='\t')
+        # Put into annoying format
+        df_annotations.ClusterNumber = ['cl' + f"{v:02d}" for v in  df_annotations.ClusterNumber]        # Find the correct ROI.
+        #df_annotations = df_clusterAnnotations[(df_clusterAnnotations.Indication.str.casefold()==ds.indication.casefold()) & (df_clusterAnnotations.Sample.str.casefold()==ds.sample.casefold()) & (df_clusterAnnotations.ROI.str.casefold()==ds.roi.casefold())]
+        print("Annotation table processed.")
         
         return df_annotations, datasets
         
 
-def cellLocationMap(ds, df_annotations, clusteringIdColumn, clusterNames, colors):
+def cellLocationMap(ds, df_annotations, clusteringToUse, clusterNames, colors):
         #PART 4 - Generate full map of cell locations
         plt.figure(figsize=(12,12))
         plt.title(ds.name)
         for i, cl in enumerate(df_annotations.ClusterNumber):
-                p = ds.points[ds.df[clusteringIdColumn] == cl]
+                p = ds.points[ds.df[clusteringToUse] == cl]
                 plt.scatter(p[:,0],p[:,1],color=colors[i],s=10,label=clusterNames[cl] + ' (cluster ' + str(cl) + ')')
         plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0)
         plt.axis('square')
@@ -261,11 +229,11 @@ def cellLocationMap(ds, df_annotations, clusteringIdColumn, clusterNames, colors
         print("Cell location map completed.")
 
 
-def contourPlots(ds, df_annotations, clusteringIdColumn, clusterNames):
+def contourPlots(ds, df_annotations, clusteringToUse, clusterNames):
         #PART 5
         for i, cl in enumerate(df_annotations.ClusterNumber):
                 plt.figure(figsize=(12, 9))
-                p = ds.points[ds.df[clusteringIdColumn] == cl]
+                p = ds.points[ds.df[clusteringToUse] == cl]
                 if np.shape(p)[0]>20:
                     plotting_points = pd.DataFrame(np.array(p), columns=['x', 'y'])
                     ax = sns.kdeplot(data=plotting_points,x='x',y='y', shade=True, palette="PuRd", cut=0, levels=15)#200
@@ -278,7 +246,7 @@ def contourPlots(ds, df_annotations, clusteringIdColumn, clusterNames):
         print("Contour plots completed.")
 
 
-def quadratMethods(ds, df_annotations, clusteringIdColumn, quadratEdgeLength=100):
+def quadratMethods(ds, df_annotations, clusteringToUse, quadratEdgeLength=100):
         #PART 6 - Time to implement some quadrat methods
         
         x = np.arange(0,ds.domainX,quadratEdgeLength)
@@ -302,7 +270,7 @@ def quadratMethods(ds, df_annotations, clusteringIdColumn, quadratEdgeLength=100
         # totals = np.zeros(shape=(nSpecies))
         
         i = 0
-        celllabels = ds.df[clusteringIdColumn]
+        celllabels = ds.df[clusteringToUse]
         for xi in range(nx-1):
             for yi in range(ny-1):
                 px = (ds.points[:,0] >= x[xi]) & (ds.points[:,0] < x[xi+1])
@@ -472,9 +440,6 @@ def moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, coun
 
         C_ns = []
         for i in range(np.shape(Ns)[0]):
-        # test for a non singular matrix ST
-            if np.linalg.det(np.cov(Ns[i])) != 0:
-                return
             Sigma = np.cov(Ns[i])
             Sigma_inv = np.linalg.inv(Sigma)
             C_n = getCFromSigma_inv(Sigma_inv)
@@ -567,7 +532,7 @@ def moruetaHolmeAssociationMatrix(ds, df_annotations, colors, clusterNames, coun
 
         print("Quadrat neighbourhood analysis (Morueta-Holme) completed.")
 
-def pairCorrelationFunction(ds, df_annotations, clusteringIdColumn, clusterNames):
+def pairCorrelationFunction(ds, df_annotations, clusteringToUse, clusterNames):
         #PART 9 - Cell-cell methods
         # Compute the crossPCF between each pairwise combination of clusters
         maxR_mum = 300
@@ -579,7 +544,7 @@ def pairCorrelationFunction(ds, df_annotations, clusteringIdColumn, clusterNames
         for i, cluster in enumerate(df_annotations.ClusterNumber):
                 print('Cluster',cluster)
 
-                p0 = ds.points[ds.df[clusteringIdColumn] == cluster]
+                p0 = ds.points[ds.df[clusteringToUse] == cluster]
                 if np.shape(p0)[0]>0:
                     p0_areas = getAnnulusAreasAroundPoints(p0, dr_mum, maxR_mum, ds.domainX, ds.domainY)
                     allPoints[cluster] = p0
@@ -592,8 +557,8 @@ def pairCorrelationFunction(ds, df_annotations, clusteringIdColumn, clusterNames
                         pair = [clusterA, clusterB]
                         print(pair)
                         
-                        p_A = ds.points[ds.df[clusteringIdColumn] == clusterA]#allPoints[clusterA]# ds.points[ds.df[clusteringIdColumn] == int(pair[0])]    
-                        p_B = ds.points[ds.df[clusteringIdColumn] == clusterB]#allPoints[clusterB]#ds.points[ds.df[clusteringIdColumn] == int(pair[1])]
+                        p_A = ds.points[ds.df[clusteringToUse] == clusterA]#allPoints[clusterA]# ds.points[ds.df[clusteringToUse] == int(pair[0])]    
+                        p_B = ds.points[ds.df[clusteringToUse] == clusterB]#allPoints[clusterB]#ds.points[ds.df[clusteringToUse] == int(pair[1])]
                         if np.shape(p_A)[0]>0 and np.shape(p_B)[0]>0:
                             density_B = np.shape(p_B)[0]/(ds.domainX*ds.domainY)
                             
@@ -638,13 +603,13 @@ def pairCorrelationFunction(ds, df_annotations, clusteringIdColumn, clusterNames
         print("PCF heatmap completed.")
 
 
-def networkStatistics(ds, df_annotations, clusteringIdColumn, clusterNames, labels, colors):
+def networkStatistics(ds, df_annotations, clusteringToUse, clusterNames, labels, colors):
         
         label2CellType = {}
         annotationDict = {df_annotations.iloc[v]['ClusterNumber']:df_annotations.iloc[v]['Annotation'] for v in range(len(df_annotations))}
         for i in range(len(ds.df)):
             label = ds.df.iloc[i].label
-            cellType = ds.df.iloc[i][clusteringIdColumn] 
+            cellType = ds.df.iloc[i][clusteringToUse] 
             label2CellType[label] = cellType
             
         import scipy.ndimage as ndimage
@@ -673,10 +638,10 @@ def networkStatistics(ds, df_annotations, clusteringIdColumn, clusterNames, labe
         
         # Quantify numbers of connections between different labels
         
-        celltypes = np.asarray(ds.df[clusteringIdColumn])
+        celltypes = np.asarray(ds.df[clusteringToUse])
         outputs = {}
         for ct_i, celltype in enumerate(annotationDict):
-            posInds = np.where(ds.df[clusteringIdColumn] == celltype)[0]
+            posInds = np.where(ds.df[clusteringToUse] == celltype)[0]
             print(ct_i, celltype)
             print(len(posInds))
             if len(posInds) > 0:
@@ -732,7 +697,7 @@ def networkStatistics(ds, df_annotations, clusteringIdColumn, clusterNames, labe
             pickle.dump(toSave,fid)
         print('Network statistics completed')
 
-def localClusteringHeatmaps(ds, df_annotations, clusteringIdColumn, clusterNames):
+def localClusteringHeatmaps(ds, df_annotations, clusteringToUse, clusterNames):
         print("Starting clustering heatmaps")   
         from utils_alt import returnAreaOfCircleInDomainAroundPoint
         # Identify where contributions to clustering/exclusion between two cell types are strongest or weakest, and save the resulting heatmap
@@ -744,7 +709,7 @@ def localClusteringHeatmaps(ds, df_annotations, clusteringIdColumn, clusterNames
         for i, cluster in enumerate(df_annotations.ClusterNumber):
                 print('Cluster',cluster)
 
-                p0 = ds.points[ds.df[clusteringIdColumn] == cluster]
+                p0 = ds.points[ds.df[clusteringToUse] == cluster]
                 if np.shape(p0)[0]>0:
                     p0_areas = vfunc_returnAreaOfCircleInDomainAroundPoint(index=np.arange(len(p0)), points=p0, r=radiusOfInterest, domainX=ds.domainX, domainY=ds.domainY)
                     allPoints[cluster] = p0
@@ -759,8 +724,8 @@ def localClusteringHeatmaps(ds, df_annotations, clusteringIdColumn, clusterNames
                         pair = [clusterA, clusterB]
                         print(pair)
                         
-                        p_A = ds.points[ds.df[clusteringIdColumn] == clusterA]#allPoints[clusterA]# ds.points[ds.df[clusteringIdColumn] == int(pair[0])]    
-                        p_B = ds.points[ds.df[clusteringIdColumn] == clusterB]#allPoints[clusterB]#ds.points[ds.df[clusteringIdColumn] == int(pair[1])]
+                        p_A = ds.points[ds.df[clusteringToUse] == clusterA]#allPoints[clusterA]# ds.points[ds.df[clusteringToUse] == int(pair[0])]    
+                        p_B = ds.points[ds.df[clusteringToUse] == clusterB]#allPoints[clusterB]#ds.points[ds.df[clusteringToUse] == int(pair[1])]
                         if np.shape(p_A)[0]>0 and np.shape(p_B)[0]>0:
                             density_B = np.shape(p_B)[0]/(ds.domainX*ds.domainY)
                             

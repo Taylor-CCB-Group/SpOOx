@@ -262,13 +262,6 @@ def main():
             o.write("\n")
         o.close()
 
-
-      
-
-        
-
-
-
         plt.figure(figsize=(12,12))
         plt.imshow(A,cmap='RdBu_r',vmin=-15,vmax=15)
         plt.xticks(ticks=np.arange(0,nSpecies),labels=clusterNames,rotation=90)
@@ -300,7 +293,7 @@ def main():
             with open(saveFile,"wb") as fid:
                 pickle.dump(toSave,fid)
     main_table = open(os.path.join(pathToWriteOutput,"all_data.txt"),"w")
-    main_table.write("state\tcell1\tcell2\tpartial_correlation\tstandard_effect_size\tFDR\n")
+    main_table.write("state\tCell Type 1\tCell Type 2\tpartial_correlation\tstandard_effect_size\tFDR\n")
     for d in main_data:
         for intera in main_data[d]:
             ns = intera.split("|")
