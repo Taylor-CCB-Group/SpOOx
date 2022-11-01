@@ -273,7 +273,15 @@ python spatialstats/AveragingMoruetaHolmeByDisease.py \
 
 
 ====================================
+### Bulk renaming of channels with consistent marker names (optional) ###
+Sometimes the markers associated with the antibody can be mislabelled across a data set. For example, 'DNA1' may be labelled 'dna1' or 'DNA3'. These inconsistencies will have downstream effects on the analysis since SpOOx associates the signal intensities of each cell based on marker name. To unify the naming you can choose a ROI that has the marker names you want to apply to all ROIs using:
 
+```python SpOOx/src/renamemarkersbasedonroi.py --indir histocat/MY_SAMPLE_123_ROI_1/ --histocatdir histocat```
+
+The indir is the histocat tiff folder for the ROI you want to rename all the the other ROIs as. This command will rename all the other ROI files in the directory specified in --histocatdir.
+
+====================================
+### Zegami visualisation of the images (optional) ###
 Optional step for visualisation using Zegami (account required: https://zegami.com/). To upload to Zegami you have to install the Zegami command line and enter your username and password to save a token that can be used by SpOOx. More details on this <a href="https://github.com/zegami/zegami-cli">here</a>.
 ```
 python SpOOx/hyperion_pipeline.py make zegami_roi
