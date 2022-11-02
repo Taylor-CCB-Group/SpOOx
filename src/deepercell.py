@@ -41,8 +41,6 @@ def File2List(file):
         lines.append(line.strip())
     return lines
 
-
-
 def TiffNorm(src_image,dest_image,contrast,brightness):
     img = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
     normed = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
@@ -51,20 +49,6 @@ def TiffNorm(src_image,dest_image,contrast,brightness):
     out = cv2.addWeighted(normed, contrast, normed, 0, brightness)
     cv2.imwrite(dest_image,out)
 
-def TiffNorm2(src_image,dest_image,contrast,brightness):
-    img = cv2.imread(src_image, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
-    #
-    # make a blank image the same size as the original
-    blank = np.zeros(img.shape, dtype=np.uint8)
-    #normalize
-    norm_img = cv2.normalize(img, blank, alpha=contrast, beta=brightness, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-
-    #normed = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-    print("contrast=",contrast)
-    print("brightness=",brightness)
-    #out = cv2.addWeighted(normed, contrast, normed, 0, brightness)
-    #cv2.imwrite(dest_image,out)
-    cv2.imwrite(dest_image,norm_img)
 
 def Tiff2Stack(fileName, imageList, dirName):
     with tifffile.TiffWriter(fileName) as stack:
@@ -73,7 +57,7 @@ def Tiff2Stack(fileName, imageList, dirName):
             # check if the file contains the antibody name
             expression = dirName+"/"+imgFilename+"_"+"*";
             fullPath = glob.glob(dirName+"/"+imgFilename+"_"+"*.tiff")
-            #print(dirName+"/"+imgFilename+"_"+"*.tiff")
+            print(dirName+"/"+imgFilename+"_"+"*.tiff")
             #quit()
             try:
                 fullPath = glob.glob(dirName+"/"+imgFilename+"_"+"*.tiff")[0]
@@ -98,17 +82,35 @@ def BlackAndWhite(tiffFileName,blackAndWhiteOut):
         print("Can't find ",tiffFileName) 
    
 
-def ZProject(tiffFileName,zProjectOut):
-    # convery tiff stack to z-projected tiff stack, unless only one slice
+def ZProject(tiffFileName,zProjectOut,channelList):
+    # convert tiff stack to z-projected tiff stack, unless only one slice
     # then just copy the file
+    # we need the channelList to know how many channels so can fix a weird feature
+    # where axes get swapped
+    # for example if there are <3 or >4 channels img.shape= (27, 1000, 1000) which is incorrect
+    # since surely it should be (1000,1000,27) but if there are 3 or 4 channels it is correct
+    # img.shape= (3, 1000, 1000) so we must make it consistent for mp.max
+    # I do this by swapping the axes (see below)
+    numChannels = len(channelList)
     print("Converting ",tiffFileName,"to flattened ",zProjectOut)
-    img = imread(tiffFileName)
-    # if the number of images in tiff stack > 1, then flatten
-    if len(img.shape) > 2:
-        img = np.max(img,axis=0)
-        imsave(zProjectOut,img)
-    else:
-        imsave(zProjectOut,img)
+    # read in a tiff stack
+    if os.path.isfile(tiffFileName):
+        img = imread(tiffFileName,cv2.IMREAD_GRAYSCALE)
+        h,w,c = img.shape
+        print("h=",h,"w=",w,"c=",c)
+        # if only one slice, just copy the file
+        if img.shape[0] == 1:
+            print("Only one slice, copying file")
+            os.system("cp "+tiffFileName+" "+zProjectOut)
+        else:
+            # z-project the tiff stack
+            # due to a strange quirk the height and channel are swapped when there is 3 or 4 channels
+            # so need to swap them back
+            if numChannels == 3 or numChannels == 4:
+                img = np.moveaxis(img,-1,0)
+            print("New shape=",img.shape)
+            imgNew = np.max(img,axis=0).copy()
+            imsave(zProjectOut,imgNew)
 
 parser = argparse.ArgumentParser(description='''Generate label matrix mask from tiffs of nuclear and cytoplasm markers.
 Input is both a nuc and cyt file of histocat tiff filenames of the markers names.
@@ -132,8 +134,8 @@ parser.add_argument('--contrast',type=int, default=5,
 # Note default is 1 which is hyperion specific
 parser.add_argument('--imageMpp', dest='imageMpp', default = 1,
                     help='microns per pixel')		
-# overwrite the image directory
-parser.add_argument('--overwrite', dest='overwrite', default = False,
+# overwrite the image directory if true or false
+parser.add_argument('--overwrite', dest='overwrite', default = False, action='store_true',
                     help='If a deepcell file exists overwrite it if true.')	
 
 
@@ -175,9 +177,7 @@ if(os.path.isfile(imageOut) and args.overwrite == False):
     quit()
 
 
-# get the file and convert to a list
-#cytoList= File2List(args.cytolist)
-#nucList= File2List(args.nuclist)
+# get the channels from the config file and convert to a list
 cytoList = readconfig.GetMarkerList(args.markerFile, "cytoplasm")
 nucList = readconfig.GetMarkerList(args.markerFile,"nucleus")
 
@@ -188,10 +188,12 @@ Tiff2Stack(imageNuc,nucList,args.dirName)
 print("Assembling cytoplasmic channel containing ", cytoList)
 Tiff2Stack(imageCyt,cytoList,args.dirName)
 
+print(len(nucList)," nuclear images")  
+print(len(cytoList)," cytoplasmic images")
 
 # Z project and flatten nuc to 1 image
-ZProject(imageNuc,imageNucFlat)
-ZProject(imageCyt,imageCytFlat)
+ZProject(imageNuc,imageNucFlat,nucList)
+ZProject(imageCyt,imageCytFlat,cytoList)
 
 #enhance contrast on image
 TiffNorm(imageNucFlat, imageNucFlatNorm, contrast,brightness)
@@ -202,7 +204,6 @@ imCyt = imread(imageCytFlatNorm)
 height=imNuc.shape[0]
 width=imNuc.shape[1]
 blankImage = np.zeros((height,width), np.uint16)
-#mask = cv2.inRange(imNuc, imCyt, (255,255,255))
 
 # write out png version of the image
 cv2.imwrite(imageNucFlatNormPNG,imNuc)
