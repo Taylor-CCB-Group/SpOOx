@@ -228,24 +228,23 @@ plotClusterExprs_updated <- function (x, cluster_id = "cluster_id", features = "
 option_list <- list(
 
     make_option(
-       c("--input_file"), type = "character",
-        default = "/t1-data/project/covidhyperion/pweeratu/signalextraction/mergecellData.tab",#/t1-data/project/covidhyperion/sergeant/scripts/R_scripts/test_data/cellData.tab",
-      help = "the input file",
+        c("--input_file"), type = "character",
+        help = "the input file",
         metavar = "character"
     ),
     make_option(
-       c("--output_dir"), type = "character",
-        default = "/t1-data/project/covidhyperion/sergeant/test_sard_ss", help = "the output directory",
+        c("--output_dir"), type = "character",
+        default = ".",
+        help = "the output directory",
         metavar = "character"
     ),
-   make_option(
-      c("--panel_file"), type = "character",
-      default =  "/t1-data/project/covidhyperion/pweeratu/markers_panel.tsv",
-      help = "Config panel with columns marker_name and clustering
+    make_option(
+        c("--panel_file"), type = "character",
+        help = "Config panel with columns marker_name and clustering
          defining markers to use for clustering.",
-      metavar = "character"
+        metavar = "character"
    ),
-   make_option(
+    make_option(
        c("--set_seed"), type = "integer",
        help = "set the same seed to get the same results
                if it is not set, a default random on will be used",
@@ -328,9 +327,15 @@ option_list <- list(
     make_option(c("--draw_charts"), type="logical", default=TRUE ,help="draw charts - default is true")
 );
 
- 
+
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
+if (any(is.null(opt$input_file),is.null(opt$panel_file))) {
+  print_help(opt_parser)
+  stop("Arguments missing.n", call.=FALSE)
+}
+
+
 k <- opt$k
 
 
@@ -471,16 +476,20 @@ if (!dir.exists(outdir)) {
 #calculate sample based pcas
 gpcs <- opt$group_pcas
 if (gpcs != "none") {
+    #get indexes of each group
     cs_by_s <- split(seq_len(ncol(sce)), sce[[gpcs]])
-    es <- as.matrix(exp)
-    ms <- vapply(cs_by_s, function(cs) rowMedians(es[, cs, drop = FALSE]),
-            numeric(length(which(rowData(sce)$marker_class == "type"))))
-    rownames(ms) <-
-        rowData(sce)$channel_name[rowData(sce)$marker_class == "type"]
-    gp_pcas <- prcomp(t(ms), scale = T)
-    write.table(gp_pcas$x[, 1:4],
-        file = paste(outdir,"pcas.txt", sep="/"),
-        col.names = NA, quote = F, sep="\t")
+    #if  4 groups or less PCA cannot be run
+    if (length(cs_by_s)>4){
+        es <- as.matrix(exp)
+        ms <- vapply(cs_by_s, function(cs) rowMedians(es[, cs, drop = FALSE]),
+                numeric(length(which(rowData(sce)$marker_class == "type"))))
+        rownames(ms) <-
+            rowData(sce)$channel_name[rowData(sce)$marker_class == "type"]
+        gp_pcas <- prcomp(t(ms), scale = T)
+        write.table(gp_pcas$x[, 1:4],
+            file = paste(outdir,"pcas.txt", sep="/"),
+            col.names = NA, quote = F, sep="\t")
+    }
 }
 
 #use harmony to create PCAs that will be fed into phenograph

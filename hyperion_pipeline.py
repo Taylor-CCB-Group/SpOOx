@@ -135,6 +135,47 @@ def phenoharmonycluster(outfile):
                 %(phenograph_options)s >> log/clustering.log 2>&1'''
     P.run(statement,without_cluster=True)
 
+
+
+
+# spatial statistical tests
+@follows(mkdir ("spatialstats/.done"),phenoharmonycluster)
+@transform(deepcell, regex(r'deepcell/(.*)/deepcell.tif'), r'spatialstats/.done/\1')
+def spatialstats(infile,outfile):
+    sample_id = os.path.split(outfile)[1]
+    
+    statement = '''python %(scripts_dir)s/spatialstats/spatialstats.py
+                -i clustering/clusters.txt
+                -o spatialstats
+                -d deepcell
+                -f {}
+                -r %(sample_id)s
+                -f networkstatistics
+                -cl harmony_pheno_cluster'''
+                
+    #work out functions
+    funcs = "paircorrelationfunction morueta-holme networkstatistics"
+    try:
+        funcs = PARAMS["spatialstats"]["functions"]
+    except:
+        pass
+    statement =statement.format(funcs)
+
+    #any annotations
+    try:
+        annos = PARAMS["spatialstats"]["annotations"]
+        statement+=" -c "+annos
+    except:
+        pass
+    statement =statement.format(funcs)
+    statement+=" >> log/spatial_stats.log 2>&1"
+
+    P.run(statement)
+    P.run("touch  %(outfile)s",without_cluster=True)
+
+
+
+
 # Generate a graph of the pipeline
 #pipeline_printout_graph('flowchart.png', 'png', [phenoharmonycluster], no_key_legend = False)
 

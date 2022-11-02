@@ -71,4 +71,4 @@ Using a table where the first 10 columns are metadata and the rest are markers, 
 
 * **--set_seed** The seed to be used in the clustering/dimension reductions. Using the same seed with the same input data and parameters should produce exactly the same results. The default is NULL in which case a random seed will be used.
 
-* **--group_pcas** if not _none_ then the marker data will be collapsed according to this column and PCA performed. A file pca.txt will be written to the output folder with 4 PCs for each unique value in the specified column. The default value is _sample_id_
+* **--group_pcas** if not _none_ then the marker data will be collapsed according to this column and PCA performed. A file pca.txt will be written to the output folder with 4 PCs for each unique value in the specified column. If the number od groups is less then 4 then this step will not be performed. The default value is _sample_id_
