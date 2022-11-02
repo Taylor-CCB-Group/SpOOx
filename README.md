@@ -34,6 +34,12 @@ batch_queue: batch
 cluster:
   queue_manager: slurm
 ```
+to limit the number of jobs run at the same time use `--multprocess X`, where X specifies the number of concurrent jobs. This may be necessary if you are processing many mcd files as most steps process each ROI in parallel
+```
+
+
+```
+
 #### Path to the scripts
 
 The pipeline needs to know the path to the src directory of the pipeline, which is specified in `scripts_dir`. Paths can either be absolute or relative to where the pipeline is being run. Hence if the pipeline was installed in /home/user1/SpOOx and being run from the user1 directory ,either of the following would work:-
@@ -200,69 +206,27 @@ The next step  concatenates all the data into a single file (```signalextraction
 ```
 python SpOOx/hyperion_pipeline.py make mergecelldata
 ```
-The final step clusters the cells based on expression of markers (specified in the markers file) and produces various charts (see src/R_scripts). A folder *clustering* in the working directory is produced which contains various metrics, including *clusters.txt*, a tab delimited text containing cluster designations and UMAP/tSNE values  
+The next step clusters the cells based on expression of markers (specified in the markers file) and produces various charts (see src/R_scripts). A folder *clustering* in the working directory is produced which contains various metrics, including *clusters.txt*, a tab delimited text containing cluster designations and UMAP/tSNE values  
 ```
 python SpOOx/hyperion_pipeline.py make phenoharmonycluster
 ```
+An optional step is to run a number of statistical tests to see if pairs of clusters are co-localised
+```
+python SpOOx/hyperion_pipeline.py make spatialstats
+```
+By default a limited number of tests are carried out. If you want more tests (see src/spatialstats), these can be specified in the pipeline.yaml  config with the spatialstats >functions
+parameter. In addition if you have annotated the clusters, you can use these annotations by creating a file (see src/spatialstats for the structure ) and specifying this with spatialstats annotations parameter e.g.
+```
+spatialstats:
+    functions: paircorrelationfunction morueta-holme networkstatistics localclusteringheatmaps contourplots
+    annotations: annotations.tsv   
+
+``
+
 The recommended next step is to upload these data in Multi Dimensional Viewer (MDV). This is a web based tool that organises the data into a series of views that can be queried and visualised more easily than looking at static outputs. Details on how to upload the data into MDV are in https://github.com/Taylor-CCB-Group/SpOOx/tree/main/src/MLVUpload.
 
 When you have investigated your data and annotated the phenotypes for each cell using the tools in MDV you can export these as annotations (see below, annotations.txt) so they can be used when you interrogate cell to cell interactions.
 
-###  1. Spatial Stats:
-
-To run the main spatial stats 
-```
-python spatialstats/spatialstats.py \
-       -i clusters/clusters.txt \
-       -o <outputdir> \
-       -cl harmony_pheno_cluster \
-       -c annotations.txt \
-       -d deepcell
-```
-* *-i* specifies the input file, which is the clusters.txt file produced by the clustering script
-* *-cl* is the column name with the cluster ids , in this case it can either be harmony_pheno_cluster of pheno_cluster
-* *-c* This is optional if you want more meaningful names than cl01, cl02 etc. It should specify a file containing annotations mapped to cluster numbers(ids):-
-```
-ClusterNumber Annotation
-cl01             T Cells
-cl02             NK cellls
-```
-* *-d* is the path to the deepcell directory produced by the pipeline, as images are required for certain parts of the analysis 
-
-
-To get average stats based on condition (once the main spatial stats script has been run)
-```
-python spatialstats/average_by_condition.py \
-        -i clusters/clusters.txt \
-        -p <spatial_stats_outputdir>
-        -o <outputdir> \
-        -cl harmony_pheno_cluster \
-        -j conditions.json
-```
-
-* *-p* is the output folder of the main spatial stats script (the -o argument of spatialstats.py)
-* *-j* specifies a json file which contains the conditions(groupings) of the sample ids
-
-```
-{
-	"conditions":{
-        "Healthy":[
-	        "HC_sample_1_ROI_6",
-            "HC_sample_3_ROI_3"
-        ],
-        "Diseased":[
-            "DS_sample_1_ROI_1",
-            "DS_sample1_ROI_2"
-        ]
-    }
-}
-
-```
-
-to summarise the main spatial stats:-
-```
-python spatialstats/summary.py -p <spatial_stats_ouputdir>
-```
 
 
 
