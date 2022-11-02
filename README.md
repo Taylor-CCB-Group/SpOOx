@@ -213,63 +213,59 @@ When you have investigated your data and annotated the phenotypes for each cell 
 To run the main spatial stats 
 ```
 python spatialstats/spatialstats.py \
-       -i clusters.txt \
-       -o <output_folder> \
+       -i clusters/clusters.txt \
+       -o <outputdir> \
        -cl harmony_pheno_cluster \
        -c annotations.txt \
        -d deepcell
 ```
 * *-i* specifies the input file, which is the clusters.txt file produced by the clustering script
 * *-cl* is the column name with the cluster ids , in this case it can either be harmony_pheno_cluster of pheno_cluster
-* *-c* is file containing the cluster names. The cluster id does should not contain a cl prefix as it does in the clusters.txt file e.g.
+* *-c* This is optional if you want more meaningful names than cl01, cl02 etc. It should specify a file containing annotations mapped to cluster numbers(ids):-
 ```
 ClusterNumber Annotation
-1             T Cells
-2             NK cellls
+cl01             T Cells
+cl02             NK cellls
 ```
 * *-d* is the path to the deepcell directory produced by the pipeline, as images are required for certain parts of the analysis 
 
 
-To run the PCFs averaged on groups of sample id
+To get average stats based on condition (once the main spatial stats script has been run)
 ```
-python spatialstats/AveragingPCFsByDisease.py \
--i clusters.txt \
--o <outputdir> \
--cl harmony_pheno_cluster \
--c annotations.txt \
--j conditions.json
+python spatialstats/average_by_condition.py \
+        -i clusters/clusters.txt \
+        -p <spatial_stats_outputdir>
+        -o <outputdir> \
+        -cl harmony_pheno_cluster \
+        -j conditions.json
 ```
 
-The *-j* parameter specified a json file which contains the conditions(groupings) of the sample ids
+* *-p* is the output folder of the main spatial stats script (the -o argument of spatialstats.py)
+* *-j* specifies a json file which contains the conditions(groupings) of the sample ids
 
 ```
 {
 	"conditions":{
-		"Healthy":[
-			"HC_sample_1_ROI_6",
-			"HC_sample_3_ROI_3"
-		],
+        "Healthy":[
+	        "HC_sample_1_ROI_6",
+            "HC_sample_3_ROI_3"
+        ],
         "Diseased":[
             "DS_sample_1_ROI_1",
             "DS_sample1_ROI_2"
         ]
-	}
+    }
 }
 
 ```
 
-
-To run the script which averages the MoruetaHolme stats by group, you first need to run the spatialstats/py script and then :-
+to summarise the main spatial stats:-
 ```
-python spatialstats/AveragingMoruetaHolmeByDisease.py \
--i morueta-holme \
--o <outputfolder> \
--c annotations.txt \
--j /t1-data/project/covidhyperion/sergeant/test_sard_ss/conditions1.json \
-
+python spatialstats/summary.py -p <spatial_stats_ouputdir>
 ```
-* *-i* is the path to the morueta-holme folder created from the spatialstats.py script
-* *-j* the path to a json file describing the groupings (see above)
+
+
+
 
 
 ====================================

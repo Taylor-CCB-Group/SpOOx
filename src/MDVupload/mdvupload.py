@@ -1,4 +1,8 @@
-import requests,json,os,zipfile,gzip,yaml,sys,pandas
+import requests,json,os,zipfile,gzip,yaml,sys,pandas,re
+from tifffile import TiffFile
+import math
+import subprocess
+import random,string
 
 def main(config):
     with open(config) as file:
@@ -250,8 +254,53 @@ def main(config):
 
 
 
+
+def make_pyramid_ome_tiff(folder,out_dir,tile_size=512):
+
+    file_names={}
+    for d in os.listdir(folder):
+        for f in os.listdir(os.path.join(folder,d)):
+            if f.endswith(".ome.tiff"):
+                sample_id = f.replace(".ome.tiff","")
+                
+                in_file = os.path.join(folder,d,f)
+                #work out dimensions for p_res 
+                t=TiffFile(in_file)
+                t_dim =t.pages[0].shape
+                p_res =str(math.ceil(math.log2(max(t_dim)/tile_size)))
+                r= ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase, k=5))
+                out_name= f'{r}.ome.tiff'
+                out_file= os.path.join(out_dir,out_name)
+                params= [
+                    "bfconvert",
+                    "-tilex",str(tile_size),
+                    "-tiley",str(tile_size),
+                    "-pyramid-scale","2",
+                    "-pyramid-resolutions",p_res,
+                    "-compression","LZW",
+                    in_file,
+                    out_file
+                ]
+                subprocess.run(params)
+                new_name= out_name.replace("tiff","png")
+                new_file = out_file.replace(".tiff",".png")
+                os.rename(out_file,new_file)
+                file_names[sample_id]=new_name
+                print(f'{sample_id}:{new_name}')
+    o=open(os.path.join(out_dir,"names.json"),"w")
+    o.write(json.dumps(file_names))
+    o.close()
+
+
+
+
+
 if __name__ == "__main__":
     conf= "config.yaml"
     if len(sys.argv)>1:
         conf= sys.argv[1]
-    main(conf)
+    #main(conf)
+    make_pyramid_ome_tiff(
+        "/t1-data/project/BM_hyperion/shared/data/panel1/ometiff",
+        "/t1-data/project/covidhyperion/sergeant/bm_ss/ometiff"
+    )

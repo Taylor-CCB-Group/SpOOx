@@ -14,25 +14,29 @@ These scripts analyze each ROI and produce various images and stats showing whic
     * y - the y position of the cell
 
 * a file that names the clusters
-    * ClusterNumber
-    * Annotation
+    * ClusterNumber - the number (name) of the cluster in the clusters column (specified by the -cl argument)
+    * Annotation - the name of the cluster
 ```
+e.g.
 ClusterNumber Annotation
-1             T Cells
-2             NK cells
+cl01             T Cells
+Cl02             NK cells
 .             .....
 ```
+If an annotation file is not supplied than the names in the cluster column will be used.
+
+```
+
+```
+
 
 ### Basics 
 To run on the  clusters file and images produced by the pipeline :-  
-
 ```
-python spatialstats/spatialstats.py \
-       -i clusters.txt \
-       -o <output_folder> \
-       -cl harmony_pheno_cluster \
-       -c annotations.txt \
-       -d deepcell
+ python spatialstats.py -i clusters/clusters.txt \
+                        -o output_folder \
+                        -cl harmony_pheno_cluster \
+                        -d deepcell
 ```
 
 
@@ -50,8 +54,8 @@ python spatialstats/spatialstats.py \
 * **-c --cluster_annotations** A tab delimited text file which matches the cluster id with names e.g.
 ```
     ClusterNumber Annotation
-    1             T Cells
-    2             NK cells
+    cl01             T Cells
+    cl02             NK cells
 ```
 
 * **-d --deepcellPath** The path to the deepcell folder created by the pipeline. Only required for the network analysis
@@ -78,4 +82,4 @@ python spatialstats/spatialstats.py \
 
 
 
-### Outputs
+## average
