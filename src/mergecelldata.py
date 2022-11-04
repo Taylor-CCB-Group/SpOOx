@@ -25,11 +25,20 @@ def AppendFiles(fileList, outputFile, minAreaVal, maxAreaVal):
     df = pd.concat((pd.read_csv(file,sep="\t") for file in fileList))
     # filter using values in 'area' column of dataframe
     df = df[(df.area >= minAreaVal) & (df.area <= maxAreaVal)]
+   
     outputDir = os.path.dirname(outputFile)
     beforeClean = os.path.join(outputDir,"beforecleaning.tab")
     df.to_csv(beforeClean,sep="\t", index=False)
     # gets rid of any columns that don't line up with the header
     afterClean = df.dropna(axis='columns')
+    afterClean["sample_id"]= afterClean.apply(lambda x:  x.cellID.split("_CELL_")[0],axis=1)
+    afterClean["condition"]= afterClean.apply(lambda x:  x.cellID.split("_SAMPLE_")[0],axis=1)
+    afterClean["sample_name"]= afterClean.apply(lambda x:  x.cellID.split("_ROI_")[0],axis=1)
+    afterClean["ROI"]= afterClean.apply(lambda x: "ROI_"+x.cellID.split("_CELL_")[0].split("_ROI_")[1],axis=1)
+
+    #create sample metadat from cell id
+   
+
     afterClean.to_csv(outputFile,sep="\t", index=False)
     # commented out the following line as it is nor working at the moment
     #pandasReport = os.path.join(outputDir,"pandasprofile.html")

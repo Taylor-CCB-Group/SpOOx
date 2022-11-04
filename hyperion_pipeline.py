@@ -12,6 +12,8 @@ from ruffus import *
 from cgatcore import pipeline as P
 import sys
 import os
+import pandas as pd
+import json
 from imctools.converters import mcdfolder2imcfolder
 from imctools.converters import ome2histocat
 
@@ -150,7 +152,6 @@ def spatialstats(infile,outfile):
                 -d deepcell
                 -f {}
                 -r %(sample_id)s
-                -f networkstatistics
                 -cl harmony_pheno_cluster'''
                 
     #work out functions
@@ -173,6 +174,37 @@ def spatialstats(infile,outfile):
     P.run(statement)
     P.run("touch  %(outfile)s",without_cluster=True)
 
+# spatial statistical tests
+@follows(spatialstats)
+@originate("spatialstats_average/summary.tsv")
+def spatialstats_average(outfile):
+    conditions = None
+    #is a condition file specified
+    try:
+        conditions = PARAMS["spatialstats_average"]["conditions"]
+    except:
+        pass
+    #if not create one from the metadata table (using the condition field)
+    if not conditions:
+        conditions= "cond_to_sampleid.json"
+        df  = pd.read_csv("metadata.tsv",sep="\t")
+        d= { x:[] for x in df.condition.unique()}
+        df.apply(lambda x: d[x.condition].append(x.sample_id),axis=1)
+        o = open(conditions,"w")
+        o.write(json.dumps({"conditions":d}))
+        o.close()
+        
+    statement = '''python %(scripts_dir)s/spatialstats/average_by_condition.py
+                -i clustering/clusters.txt
+                -o spatialstats_average
+                -p spatialstats
+                -j {}
+                -pi true
+                -cl harmony_pheno_cluster '''.format (conditions)
+    statement+=" >> log/spatialstats_average.log 2>&1"           
+
+    P.run(statement)
+ 
 
 
 

@@ -316,14 +316,7 @@ option_list <- list(
       default = "sample_id",
       help = "Create pcas based on the media of markers for each group
              specified e.g. --group_pcas sample_id "
-   ),
-
-   make_option(c("--create_sample_columns"), type = "logical", 
-   default = TRUE,
-   help = "columns condition,sample_id,sample_name and ROI are
-           generated from the cellID column, which must be preent,
-           and in the format <cond>_<sample>_<x>_<roi>_<y>"
-   ),
+    ),
     make_option(c("--draw_charts"), type="logical", default=TRUE ,help="draw charts - default is true")
 );
 
@@ -389,29 +382,6 @@ if (! is.null(opt$panel_file)) {
                      marker_name = colnames(count_data),
                      marker_class = "type")
 }
-
-
-
-#create ROI,sample_name and condition (all derived from cellID)
-if (opt$create_sample_columns) {
-   if (!"cellID" %in% colnames(exp_data)){
-        stop("No cellID column present in input table
-            to extract sample information",
-         call. = FALSE
-      )
-   }
-    #gcond <- function(x) {
-    #   return(strsplit(x, split = "_")[[1]][1])
-    #}
-    #exp_data$condition <- sapply(exp_data$cellID,gcond)[]
-
- 
-    
-    exp_data$ROI <-  sapply(exp_data$cellID,function(x)substr(x,gregexpr(pattern ='_ROI_',x)[[1]]+1,gregexpr(pattern ='_CELL_',x)[[1]]-1))
-    exp_data$sample_name <- sapply(exp_data$cellID,function(x) substr(x,1,gregexpr(pattern ='_ROI_',x)[[1]]-1))
-    exp_data$sample_id <- sapply(exp_data$cellID,function(x) substr(x,1,gregexpr(pattern ='_CELL_',x)[[1]]-1))
-}
-
 
 
 #create the single cell object

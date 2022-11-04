@@ -26,8 +26,9 @@ for d in os.listdir(indir):
     pattern = '_ROI_'
     if (re.search(pattern, d)):
         (sample_name, ROI) = re.split(pattern, d)
+        condition= d.split("_SAMPLE_")[0]
         full_path = cwd + '/' + 'signalextraction' + '/' + d
-        metadata = d + "\t" + sample_name + "\t-\tROI_" + ROI + "\t" + full_path
+        metadata = f'{d}\t {sample_name}\t{condition}\tROI_{ROI}\t{full_path}'
         #try an get the deep cell tiff
         tiff = os.path.join(indir,d,"deepcell.tif")
         if os.path.exists(tiff):
