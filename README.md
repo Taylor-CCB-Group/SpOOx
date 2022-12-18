@@ -234,7 +234,7 @@ spatialstats_average:
     conditions: conditions.json 
 ```
 
-The recommended next step is to upload these data in Multi Dimensional Viewer (MDV). This is a web based tool that organises the data into a series of views that can be queried and visualised more easily than looking at static outputs. Details on how to upload the data into MDV are in https://github.com/Taylor-CCB-Group/SpOOx/tree/main/src/MLVUpload.
+The recommended next step is to upload these data in Multi Dimensional Viewer (MDV). This is a web based tool that organises the data into a series of views that can be queried and visualised more easily than looking at static outputs. Details on how to upload the data into MDV are in https://github.com/Taylor-CCB-Group/SpOOx/tree/main/src/MDVUpload.
 
 When you have investigated your data and annotated the phenotypes for each cell using the tools in MDV you can export these as annotations (see below, annotations.txt) so they can be used when you interrogate cell to cell interactions.
 
