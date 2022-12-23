@@ -143,17 +143,17 @@ def roi2images(src_dir,dest_dir,output_tsv):
         print("sample_name ", sample_name)
         
         #full condition / sample / id
-        x =  re.search(r"^(\w+_SAMPLE_\d+_ROI_\d+)", sample_name)
+        x =  re.search(r"^(\w+_SAMPLE_\w+_ROI_\d+)", sample_name)
         full_sample_name = x.group(1)
         print("full_sample_name = "+ full_sample_name)
 
         #disease name
-        x =  re.search(r"^(\S+?)_", sample_name)
+        x =  re.search(r"^(\S+?)_SAMPLE_", sample_name)
         disease = x.group(1);
         print("disease = "+ disease)
         
         # get sample id
-        x =  re.search(r"_SAMPLE_(\d+)_", sample_name)
+        x =  re.search(r"_SAMPLE_(\w+)_ROI", sample_name)
         sample_id = x.group(1);
         print("sample_id = "+ sample_id)
                 

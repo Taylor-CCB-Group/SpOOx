@@ -69,6 +69,8 @@ def main():
         conf = json.loads(open(args.config).read())
 
         diseases= conf["conditions"]
+        state_name = conf.get("name","state")
+        print("state_name:"+state_name)
  
         
         pc_folder = os.path.join(pathToSaveFigures,"paircorrelationfunction")
@@ -89,13 +91,15 @@ def main():
 
             process_mdv_images(im_folder,diseases,pc_folder)
         
-        make_summary_table(pathToSaveFigures,diseases,args.processImages)
+        
+        make_summary_table(pathToSaveFigures,diseases,args.processImages,state_name)
 
 
-def make_summary_table(dir,diseases,add_pcf_images):
+def make_summary_table(dir,diseases,add_pcf_images,state_name):
     def get_df(f):
         dframe= pd.read_csv(f,sep="\t")
-        return dframe.set_index(["state","Cell Type 1","Cell Type 2"])
+        dframe = dframe.rename(columns={'state': state_name})
+        return dframe.set_index([state_name,"Cell Type 1","Cell Type 2"])
 
     dfs=[ get_df(os.path.join(dir,"paircorrelationfunction",x,"summary.tsv")) for x in diseases]
 

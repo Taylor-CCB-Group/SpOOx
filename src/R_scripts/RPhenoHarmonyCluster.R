@@ -10,6 +10,7 @@ if (!requireNamespace("Rphenograph", quietly = TRUE)) remotes::install_github("J
 
 
 
+
 ###########################
 ## libraries
 
@@ -230,16 +231,18 @@ option_list <- list(
     make_option(
         c("--input_file"), type = "character",
         help = "the input file",
+        default="/t1-data/project/hugheslab/sergeant/taylorlab/spoox_test2/signalextraction/mergecellData.tab",
         metavar = "character"
     ),
     make_option(
         c("--output_dir"), type = "character",
-        default = ".",
+        default = "/t1-data/project/hugheslab/sergeant/taylorlab/spoox_test2/clustering",
         help = "the output directory",
         metavar = "character"
     ),
     make_option(
         c("--panel_file"), type = "character",
+        default="/t1-data/project/hugheslab/sergeant/taylorlab/spoox_test2/markers_panel.tsv",
         help = "Config panel with columns marker_name and clustering
          defining markers to use for clustering.",
         metavar = "character"
@@ -276,7 +279,7 @@ option_list <- list(
     ),
     make_option(
         c("--run_dimRed"), type = "character",
-        default = "UMAP,TSNE", action = "store_true",
+        default = "UMAP", action = "store_true",
         help = "A comma delimited list of reduction TSNE,UMAP or NONE"
     ),
    make_option(
@@ -323,7 +326,7 @@ option_list <- list(
 
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
-if (any(is.null(opt$input_file),is.null(opt$panel_file))) {
+if (any(is.null(opt$input_file))) {
   print_help(opt_parser)
   stop("Arguments missing.n", call.=FALSE)
 }
@@ -332,7 +335,7 @@ if (any(is.null(opt$input_file),is.null(opt$panel_file))) {
 k <- opt$k
 
 
-if (!is.null(opt$set_seed)) {
+if (!is.null(opt$set_seed) && opt$set_seed != "NULL") {
    set.seed(opt$set_seed)
 }
 

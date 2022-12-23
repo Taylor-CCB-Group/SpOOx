@@ -1,36 +1,75 @@
-import requests,json,os,zipfile,gzip,yaml,sys,pandas,re
-from tifffile import TiffFile
-import math
-import subprocess
-import random,string
+import requests
+import json
+import os
+import zipfile
+import gzip
+import sys
+import pandas
+import argparse
+import tarfile
 
-def main(config):
-    with open(config) as file:
-        try:
-            conf = yaml.safe_load(file)
-        except Exception as e:
-            print("Can't open config -{}".format(config))
-            sys.exit()
-  
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n','--name',help="The name of the project",required=True)
+    parser.add_argument('-u','--url', help ="the url of the MDV website",default="https://mdv.molbiol.ox.ac.uk")
+    parser.add_argument('-t','--token' , help="The token obtained from the website",required=True)
+    parser.add_argument('-d','--directory', help="the director where SpOOx was run", default =".")
+    parser.add_argument('-g','--genome', help="genome build - not used but required - default hg19", default ="hg19")
+    parser.add_argument('-i','--images',nargs = '+', help="specify which images to use")
+    parser.add_argument('-dr','--dry_run', help="only create files-do not upload",default =False,type=bool)
+    
+    
+
+    args = parser.parse_args()
+    basedir=args.directory
     #config directory is where temporary files will be written
-    conf_dir = conf.get("output_dir","'")
+    conf_dir = os.path.join(basedir,"_temp")
+    if not os.path.exists(conf_dir):
+        os.mkdir(conf_dir)
+    #all files will be added to single tar file that will be streamed
+    tar_file = os.path.join(conf_dir,"data.tar")
+    tar = tarfile.open(tar_file,"w")
 
-    #get the url and token then remove them
-    url = conf["url"]
-    token = conf["token"]
-    del conf["url"]
-    del conf["token"]
-
+    #get the url and token 
+    url = args.url +"/hyperion/create_hyperion_project"
+    token = args.token
+  
     #get the marker and metadata files
-    marker_file=conf["marker_file"]
- 
-
+    marker_file=os.path.join(basedir,"signalextraction","markers.tsv")
       
     if not os.path.exists(marker_file):
         print ("Can't find marker panel")
         sys.exit()
 
+    sample_file = os.path.join(basedir,"metadata.tsv")
+    if not os.path.exists(sample_file):
+        print ("Can't find sample file")
+        sys.exit()
+
     #work out the markers
+    conf={
+        "dimension_reduction":{
+            "UMAP":["UMAP_1","UMAP_2","UMAP_3"]
+        },
+        "name":args.name,
+        "images_to_include":["DNA1_Ir191"],
+        "default_image":"cellmask",
+        "clustering":["harmony_pheno_cluster"],
+        "position_fields":["x","y"],
+        "create_files_only":args.dry_run,
+        "micro_per_pixel":1,
+        "cell_identifier":"cellID",
+        "sample_identifier":"sample_id",
+        "sample_fields":["sample_name","ROI","condition"],
+        "cell_data":["area","eccentricity","major_axis_length","minor_axis_length","perimeter"]
+    }
+
+    if args.images:
+        conf["images_to_include"]=args.images
+
+    
+   
    
     mdf =pandas.read_csv(marker_file,sep="\t")
     conf["cluster_markers"]= list(mdf[mdf.clustering==1]["marker_name"])
@@ -39,20 +78,12 @@ def main(config):
     
 
     
-    data_file = conf["data_file"]
+    data_file = os.path.join(basedir,"clustering","clusters.txt")
     if not os.path.exists(data_file):
         print ("Can't find data file - {}".format(data_file))
         sys.exit()
 
-    if conf.get("image_name_only"):
-        df = pandas.read_csv(data_file,sep="\t")
-        df["sample_id"]=df.apply (lambda row: "_".join(row["Image Name"].split("_")[:5]), axis=1)
-        df["sample_name"]= df.apply(lambda row: "_".join(row["Image Name"].split("_")[:3]),axis=1)
-        df["condition"]= df.apply(lambda row: row["Image Name"].split("_")[0],axis=1)
-        df["ROI"] = df.apply(lambda row: "_".join(row["Image Name"].split("_")[3:5]),axis=1)
-        t_data_file = "temp_data_file.tsv"
-        df.to_csv(t_data_file,sep="\t",index=False)
-        data_file=t_data_file
+   
 
     #get all the fields required
     dr_fields=[]
@@ -67,7 +98,7 @@ def main(config):
     
     t_f= os.path.join(conf_dir,"t_data.gz")
     o= gzip.open(t_f,'wt')
-    #o=open(t_f,"w")
+   
   
 
     #parse the data file
@@ -78,8 +109,7 @@ def main(config):
     missing_fields=[]
     annotation_index = None
     annotation_info=None
-    sample_info={}
-    
+   
 
     if conf.get("annotations"):
         anno_file = conf["annotations"]["file"]
@@ -148,19 +178,14 @@ def main(config):
                 
                 continue
 
-            #keep track of samples
+            
             read+=1
+            #only include certain samples
             if sti and not arr[sample_id_index] in sti:
                 if read%5000==0:
                     print ("processed {} lines".format(read))
                 continue
-            sa = arr[sample_id_index]
-            samples.add(sa)
-            si = sample_info.get(sa,{"n_cells":0})
-            sample_info[sa]=si
-            si["n_cells"]+=1
-            for f in conf["sample_fields"]:
-                si[f] = arr[header_to_index[f]]
+           
             to_write=[]
             for field in all:
                 to_write.append(arr[header_to_index[field]])
@@ -173,30 +198,39 @@ def main(config):
                 print ("processed {} lines".format(read))
                       
     o.close()
+    tar.add(t_f,arcname="data.gz")
+    os.remove(t_f)
 
-    #if pca fileexists add the data to the config file
-    pca_file = conf.get("pca_file")
-    if pca_file:
-        if not os.path.exists(pca_file):
-                print("cannot find specified pca file: {}".format(pca_file))
-                sys.exit()
-        else:
-            pc = pandas.read_csv(conf.get("pca_file"),sep="\t")
-            for r in pc.itertuples():
-                sample_info[r[1]]["PCS"]=list(r[2:6])
-    
-    
+
+    #the samples file
+    sdf = pandas.read_csv(sample_file,sep="\t")
+    if sti:
+        sdf=sdf[sdf["sample_id"].isin(sti)]
+    samples= list(sdf["sample_id"])
+    sample_file = os.path.join(conf_dir,"t_sample.tsv")
+    sdf.to_csv(sample_file,index=False,sep="\t")
+    tar.add(sample_file,arcname="samples.tsv")
+    os.remove(sample_file)
    
     #zip all the images
     print ("zipping images")
-    iti = conf.get("images_to_include")
+   
    
     images_zip = os.path.join(conf_dir,"temp_images.zip")
     zip_file = zipfile.ZipFile(images_zip, 'w')
-    for imgfolder in conf["image_folders"]:
+
+    #add the cell masks
+    for sample in samples:
+        f = os.path.join(basedir,"deepcell",sample,"bandwmask.png")
+        imname = sample+"_"+"cellmask.png"
+        zip_file.write(f,arcname=imname, compress_type=zipfile.ZIP_DEFLATED)
+
+
+    iti = conf.get("images_to_include")
+    imgfolder = os.path.join(basedir,"pngs","img")
+    if os.path.exists(imgfolder):
         images = os.listdir(imgfolder)
-        for im in images:
-           
+        for im in images:        
             if iti:
                 accept=False
                 for iname in iti:
@@ -205,102 +239,85 @@ def main(config):
                         break
                 if not accept:
                     continue
-
+            if im.endswith("_Mask.png"):
+                continue
             for sample in samples:        
                 if im.startswith(sample):
                     zip_file.write(os.path.join(imgfolder,im),arcname=im, compress_type=zipfile.ZIP_DEFLATED)
                     break
     zip_file.close()
 
-    #no longer needed
-    del conf["data_file"]
-    del conf["image_folders"]
+    tar.add(images_zip,arcname="main_images.zip")
+    os.remove(images_zip)
 
-    conf["sample_info"]=sample_info
+
+    #spatial stats
+    ss_dir = os.path.join(basedir,"spatialstats")
+    ss_sum = os.path.join(ss_dir,"summary.tsv")
+    if os.path.exists(ss_sum):
+        tar.add(ss_sum,arcname="spatialstats.tsv")
+        tar.add(os.path.join(ss_dir,"pcf_images.zip"),arcname="pcf_images.zip")
+        tar.add(os.path.join(ss_dir,"annotations.tsv"),arcname="annotations.tsv")
+        lchm_file= os.path.join(ss_dir,"lhm_images.zip")
+        if os.path.exists(lchm_file):
+            tar.add(lchm_file,arcname="lchm_images.zip")
+
+    #average spatial stats
+    ssa_dir = os.path.join(basedir,"spatialstats_average")
+    ssa_sum = os.path.join(ssa_dir,"summary.tsv")
+    if os.path.exists(ssa_sum):
+        tar.add(ssa_sum,arcname="spatialstats_av.tsv")
+        tar.add(os.path.join(ssa_dir,"pcf_images","av_pcf_images.zip"),arcname="av_pcf_images.zip")
+        tar.add(os.path.join(basedir,"cond_to_sampleid.json"),arcname="cond_to_sampleid.json")
+
+    #ome-tiffs
+    ot_dir = os.path.join(basedir,"pyramidal_ometiff")
+    if os.path.exists(ot_dir):
+        for f in os.listdir(ot_dir):
+            if f.endswith("ome.tiff"):
+                tar.add(os.path.join(ot_dir,f),f)
 
     #save the config
     mlvconfig= os.path.join(conf_dir,"temp_config.json")
     o = open(mlvconfig,"w")
     o.write(json.dumps(conf,indent=2))
     o.close()
-    
 
-    files={
-        "config":open(mlvconfig,"rb"),
-        "data_file":open(t_f,"rb"),
-        "images":open(images_zip,"rb")
-    }
-
-    data= {"token":token}
+    tar.add(mlvconfig,arcname="config.json")
+    tar.close()
+     
     if not conf.get("create_files_only"):
         print ("uploading files")
-        r= requests.post(url+"/hyperion/create_hyperion_project",files=files,data=data)
+        headers= {
+            "x-access-tokens":token,
+            "mdv-name":args.name,
+            "mdv-genome":args.genome
+        }
+        with open(tar_file, 'rb') as f:
+            r = requests.post(url, headers= headers,data=f)
+        
         if not r.status_code==200:
             print ("there was a problem connecting to the server")
-
         if r.text == "ok":
             print("uploaded")
         elif r.text=="permission denied":
             print("Permission denied - do you have the correct token?")
         elif r.text=="error":
             print("There was an error on the server")
+        os.remove(tar_file)
 
-        if conf.get("delete_files_after_upload"):
-            os.remove(mlvconfig)
-            os.remove(t_f)
-            os.remove(images_zip)
+      
     else:
         print ("Files generated")
 
 
 
 
-def make_pyramid_ome_tiff(folder,out_dir,tile_size=512):
-
-    file_names={}
-    for d in os.listdir(folder):
-        for f in os.listdir(os.path.join(folder,d)):
-            if f.endswith(".ome.tiff"):
-                sample_id = f.replace(".ome.tiff","")
-                
-                in_file = os.path.join(folder,d,f)
-                #work out dimensions for p_res 
-                t=TiffFile(in_file)
-                t_dim =t.pages[0].shape
-                p_res =str(math.ceil(math.log2(max(t_dim)/tile_size)))
-                r= ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase, k=5))
-                out_name= f'{r}.ome.tiff'
-                out_file= os.path.join(out_dir,out_name)
-                params= [
-                    "bfconvert",
-                    "-tilex",str(tile_size),
-                    "-tiley",str(tile_size),
-                    "-pyramid-scale","2",
-                    "-pyramid-resolutions",p_res,
-                    "-compression","LZW",
-                    in_file,
-                    out_file
-                ]
-                subprocess.run(params)
-                new_name= out_name.replace("tiff","png")
-                new_file = out_file.replace(".tiff",".png")
-                os.rename(out_file,new_file)
-                file_names[sample_id]=new_name
-                print(f'{sample_id}:{new_name}')
-    o=open(os.path.join(out_dir,"names.json"),"w")
-    o.write(json.dumps(file_names))
-    o.close()
 
 
 
 
 
 if __name__ == "__main__":
-    conf= "config.yaml"
-    if len(sys.argv)>1:
-        conf= sys.argv[1]
-    #main(conf)
-    make_pyramid_ome_tiff(
-        "/t1-data/project/BM_hyperion/shared/data/panel1/ometiff",
-        "/t1-data/project/covidhyperion/sergeant/bm_ss/ometiff"
-    )
+    main()
+    

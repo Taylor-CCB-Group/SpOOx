@@ -1,4 +1,4 @@
-name: hyperion
+name: hyperion2
 
 channels:
 - bioconda
@@ -23,6 +23,7 @@ dependencies:
 - pathlib=1.0.1
 - pip=21.3.1
 - openssl<3
+- r-base=4.1.3
 - r-optparse
 - r-ggplot2
 - r-rtsne
@@ -35,6 +36,7 @@ dependencies:
 - r-remotes
 - r-data.table
 - harmonypy=0.0.6
+- bftools
 
 - pip: 
   - multipagetiff

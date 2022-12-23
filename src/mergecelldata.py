@@ -36,6 +36,11 @@ def AppendFiles(fileList, outputFile, minAreaVal, maxAreaVal):
     afterClean["sample_name"]= afterClean.apply(lambda x:  x.cellID.split("_ROI_")[0],axis=1)
     afterClean["ROI"]= afterClean.apply(lambda x: "ROI_"+x.cellID.split("_CELL_")[0].split("_ROI_")[1],axis=1)
 
+
+    #calculate PCAs
+
+
+
     #create sample metadat from cell id
    
 
@@ -55,7 +60,7 @@ parser.add_argument('--excludeList', dest='excludeList', nargs='+',
 parser.add_argument('--infile', dest='infile', default = "cellData.tab",
                     help='the file it will look to merge')		
 parser.add_argument('--outfile', dest='outfile', default = "mergecellData.tab",
-                    help='the file to write out')		
+                    help='the file to write out')			
 parser.add_argument('--minarea', dest='minarea', default = "50", nargs='?', const=1, type=int,
                     help='minimum value for area of each cell')		
 parser.add_argument('--maxarea', dest='maxarea', default = "300", nargs='?', const=1, type=int,
@@ -84,4 +89,5 @@ outfile = os.path.join(indir,outfile)
 print("Writing files from:\n","\n",allCellDataFiles,"\n*** to ***\n",outfile)
 
 AppendFiles(allCellDataFiles, outfile, minArea, maxArea)
+
 

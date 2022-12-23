@@ -1,9 +1,12 @@
-batch_queue: batch
-  
+
+#change according to your job management system
 cluster:
   queue_manager: slurm
   queue: batch
-  
+
+#uncomment and edit if running locally and want to limit number of threads  
+#multiprocess: 2
+
 scripts_dir: SpOOx/src
 
 hyperion_dir: mcd
@@ -11,7 +14,16 @@ marker_file: markers_panel.tsv
 removebadimages_options: --minImageWidth 25 --minImageHeight 25 --filterNonMarkers 
 deepcell_options: --contrast 5
 signal_extraction_options: --verbose --distribution_crop_percentile 1.0 --doArcsinh
-phenograph_options: --save_sceobj --datatransf scaledtrim --k 30 --q 0.001 
+phenograph_options: --save_sceobj --datatransf scaledtrim --k 30 --q 0.001
+
+#uncomment and edit the following if you want different settings in spatial stats 
+#spatialstats:
+#    functions: paircorrelationfunction morueta-holme networkstatistics localclusteringheatmaps contourplots quadratcounts quadratcelldistributions celllocationmap
+#    annotations: annotations.tsv
+
+#sptatialstats_average:
+#    conditions: conditions.json     
+
 
 zegami:
   stack_dir: zegamistacks

@@ -11,11 +11,14 @@ zegami-cli (module)
 from ruffus import *
 from cgatcore import pipeline as P
 import sys
+import math
 import os
 import pandas as pd
 import json
 from imctools.converters import mcdfolder2imcfolder
 from imctools.converters import ome2histocat
+from tifffile import TiffFile
+
 
 
 
@@ -32,7 +35,7 @@ if not os.path.exists(logDir):
     os.makedirs(logDir)
     
 
-# imctools works on folders not files but folders are poor for tracking as their modicfication time is updated on access
+# imctools works on folders not files but folders are poor for tracking as their modification time is updated on access
 # To mitigate this we track a hidden dummy file (.ruffus) added to each directory of interest for tracking purposes
 @originate(PARAMS["hyperion_dir"]+"/*/.ruffus")
 def mark_input_folders(outfiles):
@@ -46,7 +49,28 @@ def mark_input_folders(outfiles):
 def mcd_to_tiff (infile, outfile):
     indir = os.path.dirname(infile)
     statement = '''python %(scripts_dir)s/parse_mcd.py -i %(indir)s -o ometiff && touch %(outfile)s >> log/mcd_to_tiff.log 2>&1'''
-    P.run(statement, job_queue=PARAMS['batch_queue'])
+    P.run(statement)
+
+#make pyramidal ometiffs to view with Avivator
+@follows(mkdir ("pyramidal_ometiff"),mcd_to_tiff)
+@transform ('ometiff/*/*.ome.tiff',regex(r'(.*)/(.*).ome.tiff'), r'pyramidal_ometiff/\2.ome.tiff')
+def make_pyramidal_ometiff (infile, outfile):
+    tile_size=512
+    t=TiffFile(infile)
+    t_dim =t.pages[0].shape
+    p_res =str(math.ceil(math.log2(max(t_dim)/tile_size))) 
+    statement='''bfconvert
+        -tilex %(tile_size)s
+        -tiley %(tile_size)s
+        -pyramid-scale 2
+        -pyramid-resolutions %(p_res)s,
+        -compression  LZW
+        %(infile)s
+        %(outfile)s
+        >> log/make_pyramidal_ometiff.log 2>&1
+    '''
+    P.run(statement)
+    
 
 # tiff_to_histocat
 @follows(mkdir ("histocat"))
@@ -54,7 +78,7 @@ def mcd_to_tiff (infile, outfile):
 def tiff_to_histocat (infile, outfiles):
     indir = os.path.dirname(infile)
     statement = '''python %(scripts_dir)s/parse_ome.py -i %(indir)s -o histocat >> log/tiff_to_histocat.log 2>&1'''
-    P.run(statement, job_queue=PARAMS['batch_queue'])
+    P.run(statement)
 
 # mark_histocat
 # touching the file to get around ruffus not being able to handle directories
@@ -78,7 +102,7 @@ def removebadimages(infile,outfile):
 @originate(PARAMS["marker_file"])
 def make_config(outfile):
     statement = '''python %(scripts_dir)s/writeconfig.py --indir histocat --outfile %(marker_file)s >> log/make_config.log  2>&1'''
-    P.run(statement, job_queue=PARAMS['batch_queue'])
+    P.run(statement)
 
 # deepcell
 @transform(tiff_to_histocat, regex(r'histocat/(.*)/.ruffus'), r'deepcell/\1/deepcell.tif')
@@ -87,7 +111,7 @@ def deepcell (infile, outfile):
     outdir = os.path.dirname(outfile)
     statement = '''python %(scripts_dir)s/deepercell.py --markerfile %(marker_file)s 
                 --indir %(indir)s --outdir %(outdir)s %(deepcell_options)s >> log/deepcell.log 2>&1'''
-    P.run(statement, job_queue=PARAMS['batch_queue'])
+    P.run(statement)
 
 
 # make pngs for visualisation
@@ -98,7 +122,7 @@ def roi2pngs():
     P.run(statement, without_cluster=True)
     statement = '''python %(scripts_dir)s/deepcell2png.py 
                     --indir deepcell --outdir pngs/img >> log/deepcell2pngs.log 2>&1'''
-    P.run(statement, without_cluster=True)
+    P.run(statement)
 
 # signal_extraction
 @transform(deepcell, regex(r'deepcell/(.*)/deepcell.tif'), r'signalextraction/\1/cellData.tab')
@@ -114,15 +138,17 @@ def signal_extraction (infile, outfile):
                 %(outdir)s
                 --analysisName %(analysis_name)s
                 %(signal_extraction_options)s >> log/signalextraction.log 2>&1'''
-    P.run(statement, job_queue=PARAMS['batch_queue'])
+    P.run(statement)
 
 
 @follows(signal_extraction)
 @originate("signalextraction/mergecellData.tab")
 def mergecelldata(outfile):
-    statement = '''python %(scripts_dir)s/make_metadata.py >> log/mergecelldata.log 2>&1'''
-    P.run(statement, without_cluster=True)
     statement = '''python %(scripts_dir)s/mergecelldata.py >> log/mergecelldata.log 2>&1'''
+    P.run(statement, without_cluster=True)
+    statement = '''python %(scripts_dir)s/make_metadata.py
+                --panel_file %(marker_file)s
+                >> log/mergecelldata.log 2>&1'''
     P.run(statement, without_cluster=True)
     
 
@@ -174,6 +200,18 @@ def spatialstats(infile,outfile):
     P.run(statement)
     P.run("touch  %(outfile)s",without_cluster=True)
 
+
+@follows(spatialstats)
+@originate("spatialstats/summary.tsv")
+def spatialstats_summary(outfile):
+    statement = '''python %(scripts_dir)s/spatialstats/summary.py
+                -p spatialstats
+                -pi True
+                >> log/spatialstats_summary.log 2>&1'''
+    P.run(statement)    
+
+
+
 # spatial statistical tests
 @follows(spatialstats)
 @originate("spatialstats_average/summary.tsv")
@@ -191,7 +229,7 @@ def spatialstats_average(outfile):
         d= { x:[] for x in df.condition.unique()}
         df.apply(lambda x: d[x.condition].append(x.sample_id),axis=1)
         o = open(conditions,"w")
-        o.write(json.dumps({"conditions":d}))
+        o.write(json.dumps({"name":"condition","conditions":d}))
         o.close()
         
     statement = '''python %(scripts_dir)s/spatialstats/average_by_condition.py
