@@ -112,7 +112,7 @@ def make_summary_table(dir,diseases,add_pcf_images,state_name):
     if add_pcf_images:
         all_tables.append(get_df(os.path.join(dir,"pcf_images","summary.tsv")))
 
-    table = pd.concat(all_tables,axis=1,join="inner")
+    table = pd.concat(all_tables,axis=1,join="outer")
 
     table.to_csv(os.path.join(dir,"summary.tsv"),sep="\t")
 
