@@ -102,7 +102,7 @@ def removebadimages(infile,outfile):
 @originate(PARAMS["marker_file"])
 def make_config(outfile):
     statement = '''python %(scripts_dir)s/writeconfig.py --indir histocat --outfile %(marker_file)s >> log/make_config.log  2>&1'''
-    P.run(statement)
+    P.run(statement,without_cluster=True)
 
 # deepcell
 @transform(tiff_to_histocat, regex(r'histocat/(.*)/.ruffus'), r'deepcell/\1/deepcell.tif')
@@ -161,7 +161,7 @@ def phenoharmonycluster(outfile):
                 --input_file signalextraction/mergecellData.tab
                 --output_dir clustering
                 %(phenograph_options)s >> log/clustering.log 2>&1'''
-    P.run(statement,without_cluster=True)
+    P.run(statement)
 
 
 
