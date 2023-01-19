@@ -1,6 +1,9 @@
+# Tutorial 1
+In this tutorial, two mcd files HC_SAMPLE_1 and COVID_SAMPLE_6, which contain 2 and 3 images respectively are going to be processed by the pipeline. This will involve cell segmentation, followed clustering by clustering. 
+
 ##  1.Organizing the file structure
 
-1. Create a directory ('test' in the example below) and then cd into it, this will be the run's root directory. The pipeline will be run from this directory and all results will be written to it. Then then download the sample data (https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar) and untar it. Next create a subdirectory called mcd and within this create two folders COVID_SAMPLE_6 and HC_SAMPLE_1
+1. Create a directory ('test' in the example below) and then cd into it, this will be the run's root directory. The pipeline will be run from this directory and all results will be written to it. Then then download the sample data (https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar) and untar it. Next, create a subdirectory called mcd and within this create two folders COVID_SAMPLE_6 and HC_SAMPLE_1.
 
     ```
     mkdir test
@@ -9,7 +12,6 @@
     mkdir mcd
     mkdir mcd/HC_SAMPLE_1
     mkdir mcd/COVID_SAMPLE_6 
-
     ```
 
 
@@ -39,12 +41,12 @@ You should end up with a directory structure shown below:-
 
 ## 2.Changing pipeline parameters 
 
-Edit the copied pipeline.yml file to alter parameters for the pipeline
+Edit the copied pipeline.yml file to alter parameters for the pipeline so they are suitable for this tutorial.
 
 * **cluster** - change this if you are using a different queue manager and queue. You can run the pipeline with --local if you are not using any queue manager
 * **scripts_dir**  change to /path/to/spoox/src (where /path/to/spoox is where you installed the pipeline)
-* **hyperion_dir** keep as mcd. This is the location of the the mcd files, in this case the mcd folder that you have just populated.
-* **marker_file**  keep as markers_panel.tsv. This specifies the markers to be used in segmentation, in this case the markers_panel.tsv that was in the tar file you extracted
+* **hyperion_dir** keep as *mcd*. This is the location of the the mcd files, in this case the mcd folder that you have just populated.
+* **marker_file**  keep as *markers_panel.tsv*. This specifies the markers to be used in segmentation, in this case the markers_panel.tsv that was in the tar file you extracted
 
 
 ## 3.Running the Pipeline To the Clustering Stage 
@@ -63,7 +65,7 @@ Alternatively you can only run the pipeline to the stage of creating tiffs and t
     source/path/to/conda/install/bin/activate hyperion
     ```
 
-2. Make sure you are in the run's root directory and run the pipeline up to the step of clustering the cells
+2. Make sure you are in the run's root directory and run the pipeline up to the step of clustering the cells:-
 
    If you have you are using a queueing mechanism (which you have specified in pipeline.yml)
    ```
@@ -92,15 +94,15 @@ Run the pipeline to the stage of creating tiffs. Then manual intervention to cho
     python /path/to/spoox//hyperion_pipeline.py make mark_histocat
     ```
 
-3. Create a new markers file. First,so we don't overwrite markers_panel.tsv, change the marker_file parameter in pipeline.yml to mymarkers.tsv. Then run
+3. Create a new markers file. First,so we don't overwrite markers_panel.tsv, change the marker_file parameter in pipeline.yml to *mymarkers.tsv*. Then run
 
     ```
     python /path/to/spoox/hyperion_pipeline.py make make_config
     ```
 
-    A file mymarkers.tsv should have been created. Fill this in appropriately. Put a 1 in the appropriate columns to show which markers you want used in the segmentation (nucleus and cytoplasm) and clustering.
+    A file *mymarkers.tsv* should have been created. Fill this in appropriately - put a 1 in the appropriate columns to show which markers you want used in the segmentation (nucleus and cytoplasm) and clustering.
 
-4. Remove any bad images which may interfere in downstream processes (in this case no images will be removed)
+4. Remove any bad images which may interfere in downstream processes (in this case no images will be removed as they all pass the criteria set)
     ```
     python /path/to/spoox//hyperion_pipeline.py make removebadimages
     ```
