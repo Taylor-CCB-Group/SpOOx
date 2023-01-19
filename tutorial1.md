@@ -1,5 +1,5 @@
 # Tutorial 1
-In this tutorial, two mcd files HC_SAMPLE_1 and COVID_SAMPLE_6, which contain 2 and 3 images respectively are going to be processed by the pipeline. This will involve cell segmentation, followed clustering by clustering. 
+In this tutorial, two mcd files HC_SAMPLE_1 and COVID_SAMPLE_6, which contain 2 and 3 images respectively are going to be processed by the pipeline. This will involve cell segmentation, followed clustering. 
 
 ##  1.Organizing the file structure
 
@@ -44,7 +44,7 @@ You should end up with a directory structure shown below:-
 Edit the copied pipeline.yml file to alter parameters for the pipeline so they are suitable for this tutorial.
 
 * **cluster** - change this if you are using a different queue manager and queue. You can run the pipeline with --local if you are not using any queue manager
-* **scripts_dir**  change to /path/to/spoox/src (where /path/to/spoox is where you installed the pipeline)
+* **scripts_dir**  change to /path/to/spoox/src (/path/to/spoox is the path where you installed the pipeline)
 * **hyperion_dir** keep as *mcd*. This is the location of the the mcd files, in this case the mcd folder that you have just populated.
 * **marker_file**  keep as *markers_panel.tsv*. This specifies the markers to be used in segmentation, in this case the markers_panel.tsv that was in the tar file you extracted
 

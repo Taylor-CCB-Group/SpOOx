@@ -17,6 +17,13 @@ conda env create -n hyperion -f </path/to/>hyperion.yml
 conda activate hyperion
 ```
 
+### Sample data and tutorial
+Sample data containing two (relatively) small .mcd files (total zipped size ~ 800Mb) can be found here:
+
+https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar
+
+
+There is a tutorial [here](https://github.com/Taylor-CCB-Group/SpOOx/blob/main/tutorial1.md) showing how to process these files
 
 
 
@@ -101,14 +108,10 @@ mkdir mcd
 ```
 Copy (or symlink) .mcd files to mcd/ dir. 
 
-Each .mcd file should be in its own, named dir within the mcd dir. SpOOx and MDV relies on a specific naming scheme to process and parse files during the analysis. The file and dir names are constructed using three elements (\<condition\>, "SAMPLE", \<sampleId\>) separated by underscores. For example:
+Each .mcd file should be in its own, named dir within the mcd dir. SpOOx and MDV relies on a specific naming scheme to process and parse files during the analysis. The file and dir names are constructed using three elements (\<condition\>, "SAMPLE", \<sampleId\>) separated by underscores. For example if your working directory was called `test` and you had two mcd files named `COVID_SAMPLE_6` and `HC_SAMPLE_1`:
 ```
-<your working dir>/mcd/COVID_SAMPLE_1/COVID_SAMPLE_1.mcd
-<your working dir>/mcd/COVID_SAMPLE_2/COVID_SAMPLE_2.mcd
-<your working dir>/mcd/INFLUENZA_SAMPLE_1/INFLUENZA_SAMPLE_1.mcd
-<your working dir>/mcd/INFLUENZA_SAMPLE_2/INFLUENZA_SAMPLE_2.mcd
-<your working dir>/mcd/INFLUENZA_SAMPLE_3/INFLUENZA_SAMPLE_3.mcd
-<your working dir>/mcd/CONTROL_SAMPLE_1/CONTROL_SAMPLE_1.mcd
+test/mcd/COVID_SAMPLE_6/COVID_SAMPLE_6.mcd
+test/mcd/HC_SAMPLE_1/HC_SAMPLE_1.mcd
 ```
 Subsequently, each region of interest (ROI) will have files named using this scheme:
 
