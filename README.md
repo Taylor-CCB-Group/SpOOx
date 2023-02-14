@@ -8,7 +8,7 @@ This pipeline was developed in close collaboration with clinicians, computationa
 The SpOOx pipeline has been tested on CENTOS and compatible OS on an HPC Linux cluster. To run the pipeline effectively, a minimum of 256GB of RAM is required. In terms of disk space, the software requires at least 1GB to store input files, but this can increase significantly with larger input data sets. For example, the demo data set included in the pipeline takes up 10G of disk space.
 
 ### Installation
-The following notes assume that conda has been installed and in the system path - guidance on setting up conda in a Linux environment can be found [here](https://github.com/OBDS-Training/OBDS_Open_Workshop_Materials/blob/master/1_Conda/3_Conda_intro_CCB_Rcourse.md).
+The following notes assume that conda has been installed and in the system path - guidance on setting up conda in a Linux environment can be found [here](https://github.com/OBDS-Training/OBDS_Open_Workshop_Materials/blob/master/1_Conda/3_Conda_intro_CCB_Rcourse.md). The SpOOx pipeline uses the [Ruffus framework](http://www.ruffus.org.uk/) (Goodstadt, L. "Ruffus: a lightweight Python library for computational pipelines" Bioinformatics, Volume 26, Issue 21, November 2010, Pages 2778–2779, https://doi.org/10.1093/bioinformatics/btq524). Please refer to Ruffus documentation for specific pipeline queries. 
 
 A zipped version of the SpOOx code can be [downloaded](https://github.com/Taylor-CCB-Group/SpOOx/archive/refs/heads/main.zip), or the repository can be cloned using:
 ```
@@ -27,7 +27,7 @@ Sample data containing two (relatively) small .mcd files (total zipped size ~ 80
 https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar
 
 
-There is a tutorial [here](https://github.com/Taylor-CCB-Group/SpOOx/blob/main/tutorial1.md) showing how to process these files
+There is a tutorial [here](https://github.com/Taylor-CCB-Group/SpOOx/blob/main/tutorial1.md) showing how to process these files.
 
 
 
