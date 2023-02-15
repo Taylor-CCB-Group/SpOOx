@@ -5,10 +5,10 @@ This pipeline was developed in close collaboration with clinicians, computationa
 
 ### System Requirements
 
-The SpOOx pipeline has been tested on CENTOS and compatible OS on an HPC Linux cluster. To run the pipeline effectively, a minimum of 256GB of RAM is required. In terms of disk space, the software requires at least 1GB to store input files, but this can increase significantly with larger input data sets. For example, the demo data set included in the pipeline takes up 10G of disk space.
+The SpOOx pipeline has been tested on CENTOS and compatible OS on an HPC Linux cluster. To run the pipeline effectively, a minimum of 16GB of RAM is required. In terms of disk space, the SpOOx code is small (20MB). The size of the projects can get quite large depending on number of MCD or OME-TIFF files analsyed. For example, the demo data set used in the tutorial (see below) which contains two MCD files containing five regions of interest and their metadata takes up ~800MB of disk space once analysed.
 
 ### Installation
-The following notes assume that conda has been installed and in the system path - guidance on setting up conda in a Linux environment can be found [here](https://github.com/OBDS-Training/OBDS_Open_Workshop_Materials/blob/master/1_Conda/3_Conda_intro_CCB_Rcourse.md). The SpOOx pipeline uses the [Ruffus framework](http://www.ruffus.org.uk/) (Goodstadt, L. "Ruffus: a lightweight Python library for computational pipelines" Bioinformatics, Volume 26, Issue 21, November 2010, Pages 2778–2779, https://doi.org/10.1093/bioinformatics/btq524). Please refer to Ruffus documentation for specific pipeline queries. 
+The following notes assume that __conda__ has been installed and in the system path - guidance on setting up conda in a Linux environment can be found [here](https://github.com/OBDS-Training/OBDS_Open_Workshop_Materials/blob/master/1_Conda/3_Conda_intro_CCB_Rcourse.md). The SpOOx pipeline uses the [Ruffus framework](http://www.ruffus.org.uk/) (Goodstadt, L. "Ruffus: a lightweight Python library for computational pipelines" Bioinformatics, Volume 26, Issue 21, November 2010, Pages 2778–2779, https://doi.org/10.1093/bioinformatics/btq524). Please refer to Ruffus documentation for specific pipeline queries. 
 
 A zipped version of the SpOOx code can be [downloaded](https://github.com/Taylor-CCB-Group/SpOOx/archive/refs/heads/main.zip), or the repository can be cloned using:
 ```
@@ -21,14 +21,21 @@ conda env create -n hyperion -f </path/to/>hyperion.yml
 conda activate hyperion
 ```
 
+conda can be  slow amd take up large amounts of memory when installing the python environment, hence we recommend using mamba thus:
+```
+conda activate base
+conda install mamba
+mamba env create -n hyperion -f </path/to/>hyperion.yml
+conda activate hyperion
+```
+
 ### Sample data and tutorial
 Sample data containing two (relatively) small .mcd files (total zipped size ~ 800Mb) can be found here:
 
 https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar
 
 
-There is a tutorial [here](https://github.com/Taylor-CCB-Group/SpOOx/blob/main/tutorial1.md) showing how to process these files.
-
+There is a [__tutorial__](https://github.com/Taylor-CCB-Group/SpOOx/blob/main/tutorial1.md) showing how to process an example data set (total size when complete 800MB). 
 
 
 ### Pipeline Parameters ###################
