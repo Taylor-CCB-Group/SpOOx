@@ -32,7 +32,7 @@ conda activate hyperion
 ### Sample data and tutorial
 Sample data containing two (relatively) small .mcd files (total zipped size ~ 800Mb) can be found here:
 
-https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar
+https://zenodo.org/record/6513508/files/sample_data.tar.gz
 
 
 There is a [__tutorial__](https://github.com/Taylor-CCB-Group/SpOOx/blob/main/tutorial1.md) showing how to process an example data set (total size when complete 800MB). 
