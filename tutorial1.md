@@ -3,7 +3,7 @@ In this tutorial, two mcd files HC_SAMPLE_1 and COVID_SAMPLE_6, which contain 2 
 
 ##  1.Organizing the file structure
 
-1. Create a directory ('test' in the example below) and then cd into it, this will be the run's root directory. The pipeline will be run from this directory and all results will be written to it. Then then download the sample data (https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar) and untar it. Next, create a subdirectory called mcd and within this create two folders COVID_SAMPLE_6 and HC_SAMPLE_1.
+1. Create a directory ('test' in the example below) and then cd into it, this will be the run's root directory. The pipeline will be run from this directory and all results will be written to it. Then then download the sample data (https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar.gz) and untar it. Next, create a subdirectory called mcd and within this create two folders COVID_SAMPLE_6 and HC_SAMPLE_1.
 
     ```
     mkdir test
