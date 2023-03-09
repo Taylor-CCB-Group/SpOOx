@@ -8,7 +8,8 @@ In this tutorial, two mcd files HC_SAMPLE_1 and COVID_SAMPLE_6, which contain 2 
     ```
     mkdir test
     cd test
-    wget  https://zenodo.org/api/files/7ed9992a-b32d-47f5-8c8d-2b15caf6a862/sample_data.tar
+    wget https://zenodo.org/record/6513508/files/sample_data.tar.gz
+    tar xvf sample_data.tar.gz
     mkdir mcd
     mkdir mcd/HC_SAMPLE_1
     mkdir mcd/COVID_SAMPLE_6 
@@ -19,7 +20,7 @@ In this tutorial, two mcd files HC_SAMPLE_1 and COVID_SAMPLE_6, which contain 2 
     ```
     tar -xvf COVID_SAMPLE_6.tar.gz -C  mcd/COVID_SAMPLE_6/
     tar -xvf HC_SAMPLE_1.tar.gz -C  mcd/HC_SAMPLE_1/ 
-    rm *.tar *.gz
+    rm *.gz
     ```
 
 3. Copy the pipeline.yml from where you installed SpOOX (/path/to/spoox) into the current directory (the run's root directory)
