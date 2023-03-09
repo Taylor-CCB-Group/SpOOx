@@ -18,8 +18,8 @@ In this tutorial, two mcd files HC_SAMPLE_1 and COVID_SAMPLE_6, which contain 2 
 
 2. Untar and move the mcd files to their corresponding folders and remove the compressed files. The markers_panel.tsv file can stay in the root directory.
     ```
-    tar -xvf COVID_SAMPLE_6.tar.gz -C  mcd/COVID_SAMPLE_6/
-    tar -xvf HC_SAMPLE_1.tar.gz -C  mcd/HC_SAMPLE_1/ 
+    tar xvf COVID_SAMPLE_6.tar.gz -C  mcd/COVID_SAMPLE_6/
+    tar xvf HC_SAMPLE_1.tar.gz -C  mcd/HC_SAMPLE_1/ 
     rm *.gz
     ```
 
