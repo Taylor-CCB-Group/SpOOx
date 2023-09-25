@@ -42,7 +42,5 @@ dependencies:
   - multipagetiff
   - imctools
   - deepcell
-  - zegami-cli
   - tifffile==2021.11.2
   - PhenoGraph
-  - MulticoreTSNE
