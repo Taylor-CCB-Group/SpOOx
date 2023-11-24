@@ -41,6 +41,6 @@ dependencies:
 - pip: 
   - multipagetiff
   - imctools
-  - deepcell
+  - deepcell==0.12.6
   - tifffile==2021.11.2
   - PhenoGraph
