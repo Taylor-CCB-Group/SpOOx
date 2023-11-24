@@ -20,7 +20,7 @@ import pandas as pd
 from cv2 import bitwise_and
 from skimage.segmentation import find_boundaries
 import re
-from pandas_profiling import ProfileReport
+#from pandas_profiling import ProfileReport
 import logging
 logger = logging.getLogger(__name__)
 
