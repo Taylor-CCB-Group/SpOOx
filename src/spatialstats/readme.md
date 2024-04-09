@@ -61,7 +61,7 @@ To run on the  clusters file and images produced by the pipeline :-
 ```
 if not supplied the cluster names/ids in the specified column will be used
 
-* **-d --deepcellPath** The path to the deepcell folder created by the pipeline. Only required for the network analysis
+* **-d --deepcellPath** The path to the deepcell folder created by the pipeline. Only required for the network analysis (networkstatistics and contactingcellnetwork)
 
 * **-r --rois** The ROIs(sample ids) to be used in the analysis. By default all ROIs will be processed, but if only a selection are required, they can be specified here
 
@@ -78,6 +78,7 @@ if not supplied the cluster names/ids in the specified column will be used
     * quadratcelldistributions
     * morueta-holme
     * networkstatistics
+    * contactingcellnetwork
 
     If not specified then all the functions will be run
 

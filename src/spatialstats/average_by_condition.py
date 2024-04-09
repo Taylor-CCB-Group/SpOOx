@@ -10,6 +10,10 @@ import argparse
 import json
 import pandas as pd
 import zipfile
+from scipy.stats import combine_pvalues,norm
+import math
+
+
 
 sns.set_style('white')
 sns.set(font_scale=2)
@@ -71,19 +75,28 @@ def main():
         diseases= conf["conditions"]
         state_name = conf.get("name","state")
         print("state_name:"+state_name)
+        if (os.path.exists(os.path.join(args.pathToSS,"contactingcellnetwork"))):
+            ccn_folder = os.path.join(pathToSaveFigures,"contactingcellnetwork")
+            os.makedirs(ccn_folder,exist_ok=True)
+            average_ccn(ccn_folder,diseases,args.pathToSS,annotations)
  
         
         pc_folder = os.path.join(pathToSaveFigures,"paircorrelationfunction")
         os.makedirs(pc_folder,exist_ok=True)
-        average_pcf(pc_folder,diseases,args.pathToSS,pathToData,clusteringIdColumn, annotations)
+        #average_pcf(pc_folder,diseases,args.pathToSS,pathToData,clusteringIdColumn, annotations)
 
         mh_folder = os.path.join(pathToSaveFigures,"morueta-holme")
         os.makedirs(mh_folder,exist_ok=True)
-        average_mh(mh_folder,diseases,args.pathToSS,annotations)
+        #average_mh(mh_folder,diseases,args.pathToSS,annotations)
 
         nt_folder = os.path.join(pathToSaveFigures,"networkstatistics")
         os.makedirs(nt_folder,exist_ok=True)
-        average_network(nt_folder,diseases,args.pathToSS,annotations)
+        #average_network(nt_folder,diseases,args.pathToSS,annotations)
+
+      
+
+        
+
 
         if args.processImages:
             im_folder = os.path.join(pathToSaveFigures,"pcf_images")
@@ -93,6 +106,63 @@ def main():
         
         
         make_summary_table(pathToSaveFigures,diseases,args.processImages,state_name)
+
+
+
+def average_ccn(ccn_folder,diseases,pathToSS,annotations):
+    summary_file = os.path.join(pathToSS,"summary.tsv")
+    df= pd.read_csv(summary_file,sep="\t")
+
+
+    cell_numbers= {f"{k1}|{k2}":v1 for k1,k2,v1 in zip(df["sample_id"],df["Cell Type 1"],df["cell 1 number"]) }
+    cell_inters = [f"{k1}|{k2}" for k1,k2 in zip(df["Cell Type 1"],df["Cell Type 2"]) ]
+
+    cell_inters=set(cell_inters)
+
+    z_scores = {f"{k1}|{k2}|{k3}":v1 for k1,k2,k3,v1 in zip(df["sample_id"],df["Cell Type 1"],df["Cell Type 2"],df["contact_zscore"])}
+
+    conds = diseases
+    res={}
+    for c in conds:
+        res_to_index={}
+        all_ps=[]
+        all_zs=[]
+        index=0
+        for i in cell_inters:
+            zsc=[]
+            weights=[]
+            pvals=[]
+            for s in conds[c]:
+                zs = z_scores.get(f"{s}|{i}")
+                if zs==None or zs== "None" or math.isnan(zs):
+                    continue
+                pv = norm.sf(abs(zs)) 
+                pvals.append(pv)
+                zsc.append(zs)
+                c1= i.split("|")[0]
+                weights.append(cell_numbers[f"{s}|{c1}"])
+            if len(pvals)==0:
+                continue
+            stat,pval= combine_pvalues(pvals,"stouffer",weights)
+            ws = sum(weights)
+            wzc=0
+            for n in range(len(zsc)):
+                wzc+=(zsc[n]*weights[n])/ws
+            all_ps.append(pval)
+            all_zs.append(wzc)
+            res_to_index[i]=index
+            index+=1
+        bl,fdr = fdrcorrection(all_ps)
+        for r in res_to_index:
+            ind= res_to_index[r]
+            res[f"{c}|{r}"]=[fdr[ind],all_zs[ind]]        
+    o=open(f"{ccn_folder}/summary.tsv","w")
+    o.write("state\tCell Type 1\tCell Type 2\tcontact_zscore\tcontact_pval_fdr\n")
+
+    for r in res:
+        state,ct1,ct2 = r.split("|")
+        o.write(f"{state}\t{ct1}\t{ct2}\t{res[r][1]}\t{res[r][0]}\n")
+    o.close()
 
 
 def make_summary_table(dir,diseases,add_pcf_images,state_name):
@@ -107,8 +177,14 @@ def make_summary_table(dir,diseases,add_pcf_images,state_name):
 
     mh_df = get_df(os.path.join(dir,"morueta-holme","summary.tsv"))
     nt_df=  get_df(os.path.join(dir,"networkstatistics","summary.tsv"))
+   
 
     all_tables= [pc_df,mh_df,nt_df]
+    ccn_file =os.path.join(dir,"contactingcellnetwork","summary.tsv")
+    if os.path.exists(ccn_file):
+        ccn_df  = get_df(os.path.join(dir,"contactingcellnetwork","summary.tsv"))
+        all_tables.append(ccn_df)
+
     if add_pcf_images:
         all_tables.append(get_df(os.path.join(dir,"pcf_images","summary.tsv")))
 

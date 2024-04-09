@@ -86,7 +86,30 @@ def main():
             for c2 in range(0,len(clusters)):
                 data["{}|{}|{}".format(sample,c1,c2)]={}
 
-   
+    #add the contactingcellnetwork
+    ccnpath = os.path.join(base_folder,"contactingcellnetwork")
+    ccn = False
+    if os.path.exists(ccnpath):
+        ccn=True
+        #list all tsv files
+        tsvs= [x for x in os.listdir(ccnpath) if x.endswith(".tsv")]
+        for tsv in tsvs:
+            sample_id = tsv.replace(".tsv","")
+            df = pandas.read_csv(os.path.join(ccnpath,tsv),sep="\t")
+            #iterate through each row and add to the data
+            for index, row in df.iterrows():
+                ct1 = clusters.index(row["Cell Type 1"])
+                ct2 = clusters.index(row["Cell Type 2"])
+                czs = float("nan")
+                cpv= float('nan')
+                if ct1 != ct2:
+                    czs = row["zscore"]
+                    cpv = row["pval_fdr"]
+                tag =f"{sample_id}|{ct1}|{ct2}"
+                data[tag]["contact_zscore"]=czs
+                data[tag]["contact_pval_fdr"]=cpv
+
+
     #methods for to get data from each pickle file
     def addNetwork(sample,x):
        get_network_stats(sample,x,data,id_to_cluster)
@@ -202,7 +225,8 @@ def main():
         zip_file_pcf.close()
         if zip_file_lhm:
             zip_file_lhm.close()
-
+    
+  
     # save the data to a flat file
     o = open(os.path.join(base_folder,"summary.tsv"),"w")
     headers=["sample_id","condition","ROI","sample_name","Cell Type 1","Cell Type 2",
@@ -210,6 +234,9 @@ def main():
                 "MH_FDR","MH_PC","MH_SES",
                 "contacts","%contacts","Network","Network(%)","mean degree",
                 "quadratCounts"]
+    if ccn:
+        headers.append("contact_zscore")
+        headers.append("contact_pval_fdr")
     if zip_file_pcf:
         headers.append("PCF_image")
     if zip_file_lhm:
@@ -229,7 +256,8 @@ def main():
         row= data[k]
         o.write("{}\t{}\t{}\t{}\t{}\t{}".format("_".join(cds),condition,ROI,sample_name,c1,c2))
         for h in headers[6:]:
-            o.write("\t"+str(row.get(h,None)))
+            o.write("\t")
+            o.write(str(row.get(h,float("NaN"))))
         o.write("\n")
     o.close()
 

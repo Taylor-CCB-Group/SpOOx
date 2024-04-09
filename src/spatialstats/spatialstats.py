@@ -20,6 +20,11 @@ from scipy.spatial.distance import cdist
 import pickle
 from statsmodels.stats.multitest import fdrcorrection
 import skimage.io
+import scipy.ndimage as ndimage
+import random
+import math
+from  scipy import stats as ss
+
 
 sns.set_style('white')
 sns.set(font_scale=2)
@@ -95,7 +100,7 @@ def main():
         functions = args.functions
      
         if bool(functions) == False:
-                functions = ['celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','morueta-holme','networkstatistics','localclusteringheatmaps']
+                functions = ['contactingcellnetwork','celllocationmap', 'contourplots', 'quadratcounts', 'quadratcelldistributions','paircorrelationfunction','morueta-holme','networkstatistics','localclusteringheatmaps']
                 print("Running all functions:", functions)
         
         print("Checking what samples and rois to analyse...")
@@ -158,6 +163,9 @@ def main():
                             networkStatistics(ds, df_annotations, clusteringIdColumn, clusterNames, labels, colors)
                     if i == 'localclusteringheatmaps':
                             localClusteringHeatmaps(ds, df_annotations, clusteringIdColumn, clusterNames)
+                    if i == "contactingcellnetwork":
+                            pathToLabelMatrix = os.path.join(args.deepcellPath ,str(ds.sample),'deepcell.tif')
+                            contactingCellNetWork(ds, df_annotations, clusteringIdColumn, clusterNames, pathToLabelMatrix)
 
 
 def preprocessing(pathToData,rois):
@@ -266,6 +274,104 @@ def contourPlots(ds, df_annotations, clusteringIdColumn, clusterNames):
         print("Contour plots completed.")
 
 
+def contactingCellNetWork(ds, df_annotations, clusteringIdColumn, clusterNames, pathToLabelMatrix,
+                          bootstrap=1000):
+    labels = skimage.io.imread(pathToLabelMatrix)
+    #this blurs the image- increases connections?
+    dilation = ndimage.maximum_filter(labels,5)
+    dilation[labels != 0] = labels[labels != 0]
+    G = np.zeros([dilation.max() + 1]*2)
+
+    # Get adjaceny matrix https://stackoverflow.com/questions/26486898/matrix-of-labels-to-adjacency-matrix
+    G = np.zeros([dilation.max() + 1]*2)
+    # does not get diagonals and only 1 pixel away
+    # left-right pairs
+    G[dilation[:, :-1], dilation[:, 1:]] = 1
+    # right-left pairs
+    G[dilation[:, 1:], dilation[:, :-1]] = 1
+    # top-bottom pairs
+    G[dilation[:-1, :], dilation[1:, :]] = 1
+    # bottom-top pairs
+    G[dilation[1:, :], dilation[:-1, :]] = 1
+ 
+    label_to_ct = {la:clusterNames[cl] for cl,la in zip(ds.df[clusteringIdColumn],ds.df.label) if clusterNames.get(cl) is not None}
+
+    cts = list(set(label_to_ct.values()))
+    cts.sort()
+
+    neighbors=  {k1:{k2:0 for k2 in cts} for k1 in cts}
+
+    maxl = dilation.max()+1
+
+    for l1 in range(1,maxl):
+        ct1 =label_to_ct.get(l1)
+        if not ct1:
+            continue
+        ns= np.where(G[l1,:])[0]
+        for l2 in ns:
+            if l2==0:
+                continue
+            ct2 =label_to_ct.get(l2)
+            if not ct2:
+                continue
+            neighbors[ct1][ct2]+=1
+
+
+    rshuff= {k1:{k2:np.zeros(bootstrap) for k2 in cts} for k1 in cts}
+    for n in range(bootstrap):
+        a=list(range(1,maxl))
+        random.shuffle(a)
+        a=[0]+a
+        for l1 in range(1,maxl):
+            
+            ct1 =label_to_ct.get(l1)
+            if not ct1:
+                continue
+            ns= np.where(G[l1,:])[0]
+            for l2 in ns:
+                if l2==0:
+                    continue
+                ct2 = label_to_ct.get(a[l2])
+                if not ct2:
+                    continue
+                rshuff[ct1][ct2][n]+=1
+
+    data= {
+        "Cell Type 1":[],
+        "Cell Type 2":[],
+        "contacts":[],
+        "random mean":[],
+        "random sd":[],
+        "zscore":[]
+    }
+
+    for ct1 in cts:
+        for ct2 in cts:
+            data["Cell Type 1"].append(ct1)
+            data["Cell Type 2"].append(ct2)
+            vals= rshuff[ct1][ct2]
+            sd = np.std(vals)
+            me = np.mean(vals)
+            data["random mean"].append(me)
+            data["random sd"].append(sd)
+            v= neighbors[ct1][ct2]
+            data["contacts"].append(v)
+            data["zscore"].append(round((v-me)/sd,2))
+    #add FDR
+    #get corrected zscores
+    c_zscore = [ 0 if math.isnan(x) else abs(x) for x in data["zscore"] ]
+    pvals = ss.norm.sf(c_zscore) * 2
+    bl,fdr = fdrcorrection(pvals)
+    fdr = [float("nan") if math.isnan(data["zscore"][n]) else x for n,x in enumerate(fdr)]
+    data["pval_fdr"]=fdr
+    #o_dir = os.path.join(ds.pathToWriteOutput,"contactingcellnetwork")
+    #if not os.path.exists(o_dir):
+    #    os.mkdir(o_dir)
+    o_file= os.path.join(ds.pathToWriteOutput,ds.name+".tsv")
+
+    pd.DataFrame(data).to_csv(o_file,index=False,sep="\t")
+
+
 def quadratMethods(ds, df_annotations, clusteringIdColumn, quadratEdgeLength=100):
         #PART 6 - Time to implement some quadrat methods
         
@@ -350,7 +456,7 @@ def quadratCounts(ds, df_annotations, colors, clusterNames, r, VMRs):
 
 def quadratCellDistributions(ds, df_annotations, colors, clusterNames, counts):
         #PART 8 - Visualise distributions of cells in each quadrat
-        import scipy.stats as ss
+    
 
         sns.set(font_scale=1)
 
@@ -636,7 +742,7 @@ def networkStatistics(ds, df_annotations, clusteringIdColumn, clusterNames, labe
             cellType = ds.df.iloc[i][clusteringIdColumn] 
             label2CellType[label] = cellType
             
-        import scipy.ndimage as ndimage
+        
         # Dilate the label matrix https://stackoverflow.com/questions/12747319/scipy-label-dilation
         dilationValue = 5
         dilation = ndimage.maximum_filter(labels,dilationValue)
