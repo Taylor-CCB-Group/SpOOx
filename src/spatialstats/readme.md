@@ -132,6 +132,55 @@ python spatialstats/average_by_condition.py \
 to summarise the main spatial stats:-
 ```
 python spatialstats/summary.py -p <spatial_stats_ouputdir>
+
 ```
+
+
+## ncf.py
+runs the neighborhood correlation function on three cell types
+### Basics 
+Requires a tsv file with at least columns for cell_type/annotation, x and y position of the cell and roi/sample id to which the cell belongs.
+```
+python spatialstats/ncf.py \
+        -i allcells.tsv \
+        -o outputdir \
+        -c "celltype 1,celltype 2,celltype 2" \
+        -lf celltypes \
+        -rm roi_metadata.tyv \
+        -g disease_state
+```
+
+
+### Arguments
+
+
+* **-i --pathTodata** The tab delimited text file containing all cells with at least roi/sample_id, x and y position and celltype/annotation field - required
+* **-o --outdir** The output directory - required
+* **-c --label_combo** The three celltypes/annotations for the analysis (comma delimited) -requires
+* **-rf --roi_field** The column name for the roi/sample - default is sample_id
+* **-lf --label_field** The column name labels(cell types/annotations) - default is annotation
+* **-pf --position_fields** The column names for the cell position (comma delimited)- default x,y
+* **-ri --rois** comma delimited if rois/samples to include- default is to include all the rois present in the input file
+* **-rm --roi_metadata** path to a tab delimited file containing information about the rois. The first column (which can have any name), needs to be the the roi/sample_id. Can contain a width and height , otherwise the  will be calculated from the max x and y values for each roi. Also can contain information grouping of each rot e.g. disease state, in which case data can grouped using the -g argument
+e.g.
+   ```
+    roi        width    height    disease_state
+    h_1_roi1   1000     1000     healthy
+    d_r_ro1    1000     1000     ill
+
+    ```
+    using  *-g disease state* will group the data to disease state
+
+* **-g --groups** A comma delimited list of terms to group the data by, each term must be a column in the roi metadata table
+* **-bm --bootstrap_method** The method used to randomize the cells for bootstrapping. Can be either  position (randomized position) or shuffle (label shuffling) - default is position
+* **-bn --bootstrap_n** The number of bootstrap iterations - default 1000
+* **-mr --maxR** Maximum radius to calculate NCF. Default is 150
+* **-st --step** Step size for NCF. Default is 5
+* **-t --threads**  Number of threads to use. Default is 1
+
+
+
+
+
 
 
