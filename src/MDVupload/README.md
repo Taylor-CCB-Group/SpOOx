@@ -62,6 +62,7 @@ python SpOOx/hyperion_pipeline.py make spatialstats_average
 
 * **-g/--genome** The genome build  - this is not required as no genomic information is actually used (yet) defaults to hg19
 
+* **-td/--temp_dir** The folder to crate the temporary tar ball to upload- default is _temp in the  data directory 
 
 * **-i/--images** By default all images in the png/img folder will be uploaded, but if yu just want a certain subset, you can specify them here e.g. to specify only DNA and GranzymeB images  _-i DNA1_Ir19 GranzymeB_Er167_
 

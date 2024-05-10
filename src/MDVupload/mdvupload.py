@@ -18,6 +18,7 @@ def main():
     parser.add_argument('-g','--genome', help="genome build - not used but required - default hg19", default ="hg19")
     parser.add_argument('-i','--images',nargs = '+', help="specify which images to use")
     parser.add_argument('-dr','--dry_run', help="only create files-do not upload",default =False,type=bool)
+    parser.add_argument("-td","--tempdir",help="the temporary directory to put the tar ball to upload. Default is _temp in the run folder")
     
     
 
@@ -25,6 +26,8 @@ def main():
     basedir=args.directory
     #config directory is where temporary files will be written
     conf_dir = os.path.join(basedir,"_temp")
+    if args.tempdir:
+        conf_dir = args.tempdir
     if not os.path.exists(conf_dir):
         os.mkdir(conf_dir)
     #all files will be added to single tar file that will be streamed
@@ -154,13 +157,14 @@ def main():
                 first =False
                 for field in all:
                     try:
-                        index= headers.index(field)
+                        #r changes - to .
+                        if "-" in field:
+                            index = headers.index(field.replace("-","."))
+                        else:
+                            index= headers.index(field)
                         header_to_index[field]=index
                     except:
-                        if field=="Va7-2":
-                            header_to_index[field]=headers.index("Va7.2")
-                        else:
-                            missing_fields.append(field)
+                        missing_fields.append(field)
                 if len(missing_fields)>0:
                      print("The following fields are missing in the data file: {}".format(",".join(missing_fields)))
                      sys.exit()
