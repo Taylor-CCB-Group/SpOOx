@@ -118,8 +118,7 @@ def main():
         
         for ds in datasets:
             ds.pathToWriteOutput = pathToWriteOutput+"/quadratMethods/"
-            if not os.path.exists(ds.pathToWriteOutput):
-                os.mkdir(ds.pathToWriteOutput)
+            os.makedirs(ds.pathToWriteOutput,exist_ok=True)
             #clusteringIdColumn = 'phenoGraph_cluster' ###ADD to cmd line?
             if len(df_annotations.ClusterNumber) < 21:
                 colors = [plt.cm.tab20(v) for v in range(len(df_annotations.ClusterNumber))]
@@ -143,8 +142,7 @@ def main():
                     #get directory according to function and create the dirctory
                     #if one does not exist
                     ds.pathToWriteOutput=pathToWriteOutput+"/"+i+"/"
-                    if not os.path.exists(ds.pathToWriteOutput):
-                            os.mkdir(ds.pathToWriteOutput)
+                    os.makedirs(ds.pathToWriteOutput,exist_ok=True)
                     if i == 'celllocationmap':
                             cellLocationMap(ds, df_annotations, clusteringIdColumn, clusterNames, colors)
                     if i == 'contourplots':
