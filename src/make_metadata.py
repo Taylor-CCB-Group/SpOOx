@@ -64,7 +64,12 @@ for d in os.listdir(indir):
     pattern = '_ROI_'
     if (re.search(pattern, d)):
         (sample_name, ROI) = re.split(pattern, d)
-        condition= d.split("_SAMPLE_")[0]
+        #get the condition  - relies on sample names being in a specific format
+        arr = d.split("_SAMPLE_")
+        #sometimes they are lower case
+        if len(arr)==1:
+            arr=d.split("_sample_")
+        condition = arr[0]
         full_path = cwd + '/' + 'signalextraction' + '/' + d
         metadata = f'{d}\t {sample_name}\t{condition}\tROI_{ROI}\t{full_path}'
         #try and get the deep cell tiff
