@@ -144,7 +144,9 @@ def signal_extraction (infile, outfile):
 @follows(signal_extraction)
 @originate("signalextraction/mergecellData.tab")
 def mergecelldata(outfile):
-    statement = '''python %(scripts_dir)s/mergecelldata.py >> log/mergecelldata.log 2>&1'''
+    statement = '''python %(scripts_dir)s/mergecelldata.py
+                  %(mergecelldata_options)s
+                  >> log/mergecelldata.log 2>&1'''
     P.run(statement, without_cluster=True)
     statement = '''python %(scripts_dir)s/make_metadata.py
                 --panel_file %(marker_file)s
@@ -194,7 +196,6 @@ def spatialstats(infile,outfile):
         statement+=" -c "+annos
     except:
         pass
-    statement =statement.format(funcs)
     statement+=" >> log/spatial_stats.log 2>&1"
 
     P.run(statement)
@@ -213,7 +214,7 @@ def spatialstats_summary(outfile):
 
 
 # spatial statistical tests
-@follows(spatialstats)
+@follows(spatialstats_summary)
 @originate("spatialstats_average/summary.tsv")
 def spatialstats_average(outfile):
     conditions = None
