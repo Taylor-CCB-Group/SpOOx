@@ -83,28 +83,21 @@ def main():
         
         pc_folder = os.path.join(pathToSaveFigures,"paircorrelationfunction")
         os.makedirs(pc_folder,exist_ok=True)
-        #average_pcf(pc_folder,diseases,args.pathToSS,pathToData,clusteringIdColumn, annotations)
+        average_pcf(pc_folder,diseases,args.pathToSS,pathToData,clusteringIdColumn, annotations)
 
         mh_folder = os.path.join(pathToSaveFigures,"morueta-holme")
         os.makedirs(mh_folder,exist_ok=True)
-        #average_mh(mh_folder,diseases,args.pathToSS,annotations)
+        average_mh(mh_folder,diseases,args.pathToSS,annotations)
 
         nt_folder = os.path.join(pathToSaveFigures,"networkstatistics")
         os.makedirs(nt_folder,exist_ok=True)
-        #average_network(nt_folder,diseases,args.pathToSS,annotations)
-
-      
-
-        
-
+        average_network(nt_folder,diseases,args.pathToSS,annotations)
 
         if args.processImages:
             im_folder = os.path.join(pathToSaveFigures,"pcf_images")
             os.makedirs(im_folder,exist_ok=True)
-
             process_mdv_images(im_folder,diseases,pc_folder)
-        
-        
+
         make_summary_table(pathToSaveFigures,diseases,args.processImages,state_name)
 
 
