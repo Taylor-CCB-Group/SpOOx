@@ -35,7 +35,11 @@ cluster_colors <- c(
 "#33A02C", "#B2DF8A", "#55A1B1", "#8DD3C7", "#A6761D",
 "#E6AB02", "#7570B3", "#BEAED4", "#666666", "#999999",
 "#aa8282", "#d4b7b7", "#8600bf", "#ba5ce3", "#808000",
-"#aeae5c", "#1e90ff", "#00bfff", "#56ff0d", "#ffff00")
+"#aeae5c", "#1e90ff", "#00bfff", "#56ff0d", "#ffff00",
+"#FF4500", "#DA70D6", "#32CD32", "#FFD700", "#00FA9A",
+"#4682B4", "#D2691E", "#FF1493", "#7FFF00", "#8A2BE2",
+"#5F9EA0", "#FF6347", "#40E0D0", "#EE82EE", "#9ACD32",
+"#FF69B4", "#1E90FF", "#B22222", "#ADFF2F", "#FF00FF")
 
 
 #scales values in each row of datamatrix between 0 and 1
